@@ -28,12 +28,14 @@ Run:
 
 #include "nlohmann/json_fwd.hpp"
 #include <CLI/CLI.hpp>
+#include <cstdint>
 #include <iomanip>
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <sherpa-onnx/c-api/c-api.h>
 #include <sstream>
 #include <stdio.h>
+#include <string>
 #include <vector>
 #include <whisper.h>
 
@@ -81,18 +83,24 @@ const SherpaOnnxWave *read_wave(const std::string &path) {
   return wave;
 }
 
+std::string get_default_provider() {
+#if defined(__APPLE__)
+  return "coreml";
+#endif
+  return "cpu";
+}
+
 const SherpaOnnxOfflineSpeakerDiarization *
 create_sd(const std::string &segmentation_model_path,
-          const std::string &embedding_model_path) {
+          const std::string &embedding_model_path, int32_t num_clusters,
+          std::string provider) {
   SherpaOnnxOfflineSpeakerDiarizationConfig config;
   memset(&config, 0, sizeof(config));
-#if defined(__APPLE__)
-  config.segmentation.provider = "cpu";
-  config.embedding.provider = "cpu";
-#endif
+  config.segmentation.provider = provider.c_str();
+  config.embedding.provider = provider.c_str();
   config.segmentation.pyannote.model = segmentation_model_path.c_str();
   config.embedding.model = embedding_model_path.c_str();
-  config.clustering.num_clusters = 4;
+  config.clustering.num_clusters = num_clusters;
   const SherpaOnnxOfflineSpeakerDiarization *sd =
       SherpaOnnxCreateOfflineSpeakerDiarization(&config);
   if (!sd) {
@@ -124,6 +132,8 @@ int main(int argc, char *argv[]) {
   std::string segmentation_model_path =
       "sherpa-onnx-pyannote-segmentation-3-0.onnx";
   std::string embedding_model_path = "nemo_en_titanet_small.onnx";
+  int32_t num_speakers = 4;
+  std::string provider = get_default_provider();
   bool debug = false;
 
   app.add_option("model", model_path, "Path to the model")->required();
@@ -133,6 +143,9 @@ int main(int argc, char *argv[]) {
                  "Path to the segmentation model");
   app.add_option("--embedding-model", embedding_model_path,
                  "Path to the embedding model");
+  app.add_option("--num-speakers", num_speakers,
+                 "Number of speakers in the file");
+  app.add_option("--provider", provider, "Onnx execution provider");
   app.add_flag("--debug", debug, "Enable debug output");
 
   try {
@@ -149,7 +162,8 @@ int main(int argc, char *argv[]) {
   // Diarize
   auto *wave = read_wave(audio_file);
   CHECK_NULL(wave);
-  auto *sd = create_sd(segmentation_model_path, embedding_model_path);
+  auto *sd = create_sd(segmentation_model_path, embedding_model_path,
+                       num_speakers, provider);
   CHECK_NULL(sd);
 
   auto *result = SherpaOnnxOfflineSpeakerDiarizationProcessWithCallback(

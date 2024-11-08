@@ -27,10 +27,17 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release .
 cmake --build build --config Release --target main
 ```
 
+Run
+
+```console
+./build/bin/loud -h
+```
+
 ## Gotchas
 
 OpenMP not found on macOS
 
 ```console
+brew install libomp
 export OpenMP_ROOT=$(brew --prefix)/opt/libomp
 ```
