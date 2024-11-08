@@ -4,6 +4,9 @@
 
 - Normalize with ffmpeg
 - Integrate sherpa-onnx diarization
+- Read wav file with popular library
+- Write it as JSON format using popular library
+- Document install of the binary and ffmpeg for Windows/Linux/macOS
 
 ## 2024-11-08
 
