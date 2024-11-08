@@ -5,6 +5,10 @@ project(loud)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Used by clangd intellisense
+# set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+
 # Define output directories
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -19,10 +23,10 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
 
 # Fetch whisper.cpp
 include(FetchContent)
+set(WHISPER_URL https://github.com/ggerganov/whisper.cpp/archive/refs/tags/v1.7.1.zip)
 FetchContent_Declare(
     whisper
-    GIT_REPOSITORY https://github.com/ggerganov/whisper.cpp.git
-    GIT_TAG v1.7.1
+    URL ${WHISPER_URL}
 )
 
 # Configure whisper.cpp options before making it available
