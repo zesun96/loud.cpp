@@ -1,26 +1,31 @@
+
 /*
+clang-format off
+
 Transcribe audio with whisper.cpp and diarize with sherpa-onnx
 
-Prepare models:
+Prepare files:
 wget https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
 
-wget https://github.com/thewh1teagle/vibe/raw/refs/heads/main/samples/single.wav
-
-wget \
-  https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-segmentation-models/sherpa-onnx-pyannote-segmentation-3-0.tar.bz2
+wget https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-segmentation-models/sherpa-onnx-pyannote-segmentation-3-0.tar.bz2
 tar xvf sherpa-onnx-pyannote-segmentation-3-0.tar.bz2
-rm sherpa-onnx-pyannote-segmentation-3-0.tar.bz2
+mv sherpa-onnx-pyannote-segmentation-3-0/model.onnx sherpa-onnx-pyannote-segmentation-3-0.onnx
+rm -rf sherpa-onnx-pyannote-segmentation-3-0.tar.bz2 sherpa-onnx-pyannote-segmentation-3-0
 
-wget \
-  https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-recongition-models/nemo_en_titanet_small.onnx
+wget https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-recongition-models/nemo_en_titanet_small.onnx
+
+wget https://github.com/thewh1teagle/vibe/raw/refs/heads/main/samples/single.wav
 
 Build:
 cmake -B build .
 cmake --build build
+
+Run:
 ./build/bin/loud ggml-tiny.bin single.wav --json transcript.json
 */
 
 #include "main.h"
+
 #include "nlohmann/json_fwd.hpp"
 #include <CLI/CLI.hpp>
 #include <iomanip>
@@ -76,16 +81,17 @@ const SherpaOnnxWave *read_wave(const std::string &path) {
   return wave;
 }
 
-const SherpaOnnxOfflineSpeakerDiarization *create_sd() {
+const SherpaOnnxOfflineSpeakerDiarization *
+create_sd(const std::string &segmentation_model_path,
+          const std::string &embedding_model_path) {
   SherpaOnnxOfflineSpeakerDiarizationConfig config;
   memset(&config, 0, sizeof(config));
 #if defined(__APPLE__)
   config.segmentation.provider = "cpu";
   config.embedding.provider = "cpu";
 #endif
-  config.segmentation.pyannote.model =
-      "sherpa-onnx-pyannote-segmentation-3-0/model.onnx";
-  config.embedding.model = "nemo_en_titanet_small.onnx";
+  config.segmentation.pyannote.model = segmentation_model_path.c_str();
+  config.embedding.model = embedding_model_path.c_str();
   config.clustering.num_clusters = 4;
   const SherpaOnnxOfflineSpeakerDiarization *sd =
       SherpaOnnxCreateOfflineSpeakerDiarization(&config);
@@ -115,11 +121,18 @@ int main(int argc, char *argv[]) {
   std::string model_path;
   std::string audio_file;
   std::string json_path;
+  std::string segmentation_model_path =
+      "sherpa-onnx-pyannote-segmentation-3-0.onnx";
+  std::string embedding_model_path = "nemo_en_titanet_small.onnx";
   bool debug = false;
 
   app.add_option("model", model_path, "Path to the model")->required();
   app.add_option("audio", audio_file, "Path to the audio file")->required();
   app.add_option("--json", json_path, "Path to save the JSON output");
+  app.add_option("--segmentation-model", segmentation_model_path,
+                 "Path to the segmentation model");
+  app.add_option("--embedding-model", embedding_model_path,
+                 "Path to the embedding model");
   app.add_flag("--debug", debug, "Enable debug output");
 
   try {
@@ -136,7 +149,7 @@ int main(int argc, char *argv[]) {
   // Diarize
   auto *wave = read_wave(audio_file);
   CHECK_NULL(wave);
-  auto *sd = create_sd();
+  auto *sd = create_sd(segmentation_model_path, embedding_model_path);
   CHECK_NULL(sd);
 
   auto *result = SherpaOnnxOfflineSpeakerDiarizationProcessWithCallback(
