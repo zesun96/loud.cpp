@@ -1,0 +1,8 @@
+{
+    "recommendations": [
+        "xaver.clang-format",
+        "cs128.cs128-clang-tidy",
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools"
+    ]
+}
