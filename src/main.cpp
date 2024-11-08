@@ -18,8 +18,8 @@ cmake --build build
 #include <stdio.h>
 
 static void whisper_print_segment_callback(struct whisper_context *ctx,
-                                           struct whisper_state * /*state*/,
-                                           int n_new, void *user_data) {
+                                           struct whisper_state *, int n_new,
+                                           void *user_data) {
 
   const int n_segments = whisper_full_n_segments(ctx);
 
@@ -30,13 +30,12 @@ static void whisper_print_segment_callback(struct whisper_context *ctx,
   const int s0 = n_segments - n_new;
 
   if (s0 == 0) {
-    printf("\n");
+    std::cout << std::endl;
   }
 
   for (int i = s0; i < n_segments; i++) {
     const char *text = whisper_full_get_segment_text(ctx, i);
-    printf("%s", text);
-    fflush(stdout);
+    std::cout << text << std::flush;
   }
 }
 
@@ -56,16 +55,16 @@ int main(int argc, char *argv[]) {
   const SherpaOnnxWave *wave = SherpaOnnxReadWave(audio_file);
   if (!wave) {
     std::cerr << "Failed to read audio file: " << audio_file << std::endl;
-    return 2;
+    return EXIT_FAILURE;
   }
 
   struct whisper_context_params cparams = whisper_context_default_params();
   struct whisper_context *ctx =
       whisper_init_from_file_with_params(model_path, cparams);
 
-  if (ctx == nullptr) {
-    fprintf(stderr, "error: failed to initialize whisper context\n");
-    return 3;
+  if (!ctx) {
+    std::cerr << "Error: Failed to initialize whisper context." << std::endl;
+    return EXIT_FAILURE;
   }
 
   whisper_full_params wparams =
@@ -78,8 +77,8 @@ int main(int argc, char *argv[]) {
 
   if (whisper_full_parallel(ctx, wparams, wave->samples, wave->num_samples,
                             4) != 0) {
-    fprintf(stderr, "%s: failed to process audio\n", argv[0]);
-    return 10;
+    std::cerr << argv[0] << ": Failed to process audio." << std::endl;
+    return EXIT_FAILURE;
   }
 
   SherpaOnnxFreeWave(wave);
