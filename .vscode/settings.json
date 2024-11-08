@@ -6,4 +6,5 @@
         "--completion-style=detailed",
         "--header-insertion=never"
     ],
+    "C_Cpp.intelliSenseEngine": "disabled" // Enable only when needs debugging
 }

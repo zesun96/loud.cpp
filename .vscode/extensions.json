@@ -3,6 +3,7 @@
         "xaver.clang-format",
         "cs128.cs128-clang-tidy",
         "llvm-vs-code-extensions.vscode-clangd",
-        "ms-vscode.cmake-tools"
+        "ms-vscode.cmake-tools",
+        "ms-vscode.cpptools"
     ]
 }
