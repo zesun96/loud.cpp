@@ -20,14 +20,14 @@ cmake --build build
 ./target/bin/loud ggml-tiny.bin single.wav
 */
 
-#include "sherpa-onnx/c-api/c-api.h"
-#include "whisper.h"
 #include <iomanip>
 #include <iostream>
-#include <sstream>
 #include <nlohmann/json.hpp>
+#include <sherpa-onnx/c-api/c-api.h>
+#include <sstream>
 #include <stdio.h>
 #include <vector>
+#include <whisper.h>
 
 static void cb_log_disable(enum ggml_log_level, const char *, void *) {}
 

@@ -1,40 +1,33 @@
 cmake_minimum_required(VERSION 3.10)
-project(loud CXX)
 
-# Set C++ standard
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+project(main)
 
-# Used by clangd intellisense
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON ./)
+# Export compile_commands.json
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Avoid warning about DOWNLOAD_EXTRACT_TIMESTAMP in CMake 3.24:
-if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
-    cmake_policy(SET CMP0135 NEW)
-endif()
+# Enable FetchContent
+include(FetchContent)
 
+# Prepare executable
+add_executable(main src/main.cpp)
+set_target_properties(main PROPERTIES OUTPUT_NAME "loud")
+set_target_properties(main PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 # Define output directories
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-# Create our executable
-add_executable(loud src/main.cpp)
+# Add JSON lib
+FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz)
+FetchContent_MakeAvailable(json)
+target_link_libraries(main PRIVATE nlohmann_json::nlohmann_json)
 
+# Add whisper lib
+FetchContent_Declare(whisper URL https://github.com/ggerganov/whisper.cpp/archive/refs/tags/v1.7.1.tar.gz)
+FetchContent_MakeAvailable(whisper)
 
-# Force static libraries globally
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
-
-# Fetch whisper.cpp
-include(FetchContent)
-set(WHISPER_URL https://github.com/ggerganov/whisper.cpp/archive/refs/tags/v1.7.1.zip)
-FetchContent_Declare(
-    whisper
-    URL ${WHISPER_URL}
-)
-
-# Configure whisper.cpp options before making it available
 set(WHISPER_CCACHE OFF CACHE BOOL "")
 set(GGML_CCACHE OFF CACHE BOOL "")
 set(WHISPER_BUILD_TESTS OFF CACHE BOOL "")
@@ -47,79 +40,12 @@ if(APPLE)
     set(GGML_METAL ON CACHE BOOL "")
 endif()
 
+target_include_directories(main PUBLIC ${whisper_SOURCE_DIR}/include)
+target_include_directories(main PUBLIC ${whisper_SOURCE_DIR}/ggml/include)
 
-
-# Now make whisper available with our options
-FetchContent_MakeAvailable(whisper)
-
-# Fetch sherpa-onnx# Determine Sherpa-ONNX URL based on OS
-if(WIN32)
-    set(SHERPA_URL https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.10.30/sherpa-onnx-v1.10.30-win-x64-shared.tar.bz2)
-elseif(UNIX AND NOT APPLE)
-    set(SHERPA_URL https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.10.30/sherpa-onnx-v1.10.30-linux-x64-shared.tar.bz2)
-elseif(APPLE)
-    set(SHERPA_URL https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.10.30/sherpa-onnx-v1.10.30-osx-universal2-shared.tar.bz2)
-endif()
-
-# Fetch sherpa-onnx
-FetchContent_Declare(
-    sherpa
-    URL ${SHERPA_URL}
-)
-
-# Fetch sherpa-onnx
-FetchContent_Declare(
-    sherpa
-    URL ${SHERPA_URL}
-)
-
-
-
-
-
-
-
-# Make sherpa available
-FetchContent_MakeAvailable(sherpa)
-
-# Add sherpa-onnx include and link directories
-target_include_directories(loud PRIVATE ${sherpa_SOURCE_DIR}/include)
-target_include_directories(loud PRIVATE ${sherpa_SOURCE_DIR}/include/sherpa-onnx/c-api)
-target_include_directories(loud PRIVATE ${sherpa_SOURCE_DIR}/include/sherpa-onnx)
-# target_include_directories(loud PRIVATE ${whisper_SOURCE_DIR}/include)
-# target_include_directories(loud PRIVATE ${whisper_SOURCE_DIR}/ggml/include)
-
-
-target_link_directories(loud PRIVATE ${sherpa_SOURCE_DIR}/lib)
-target_link_libraries(loud PRIVATE
-    sherpa-onnx-c-api
-    cargs
-    $<$<NOT:$<PLATFORM_ID:Windows>>:onnxruntime>
-)
-
-# Copy sherpa runtime libs
-add_custom_command(TARGET loud POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${sherpa_SOURCE_DIR}/bin $<TARGET_FILE_DIR:loud>
-)
-
-# Copy sherpa shared libs to bin folder
-add_custom_command(TARGET loud POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${sherpa_SOURCE_DIR}/lib $<TARGET_FILE_DIR:loud>
-)
-
-
-
-
-# Add JSON lib
-FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz)
-FetchContent_MakeAvailable(json)
-target_link_libraries(loud PRIVATE nlohmann_json::nlohmann_json)
-
-# Link libraries
+# Link whisper
 if(APPLE)
-    target_link_libraries(loud PRIVATE
+    target_link_libraries(main PRIVATE
         whisper
         ggml
         "-framework CoreFoundation"
@@ -127,8 +53,39 @@ if(APPLE)
         "-framework CoreML"
     )
 else()
-    target_link_libraries(loud PRIVATE
+    target_link_libraries(main PRIVATE
         whisper
         ggml
     )
 endif()
+
+# Add sherpa-onnx
+if(WIN32)
+    set(SHERPA_URL https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.10.30/sherpa-onnx-v1.10.30-win-x64-shared.tar.bz2)
+elseif(UNIX AND NOT APPLE)
+    set(SHERPA_URL https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.10.30/sherpa-onnx-v1.10.30-linux-x64-shared.tar.bz2)
+elseif(APPLE)
+    set(SHERPA_URL https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.10.30/sherpa-onnx-v1.10.30-osx-universal2-shared.tar.bz2)
+endif()
+FetchContent_Declare(
+    sherpa
+    URL ${SHERPA_URL}
+)
+FetchContent_MakeAvailable(sherpa)
+target_include_directories(main PUBLIC ${sherpa_SOURCE_DIR}/include)
+
+# Link sherpa
+target_link_directories(main PRIVATE ${sherpa_SOURCE_DIR}/lib)
+target_link_libraries(main PRIVATE
+    sherpa-onnx-c-api
+    cargs
+    $<$<NOT:$<PLATFORM_ID:Windows>>:onnxruntime>
+)
+
+# Copy sherpa lib/ and bin/
+add_custom_command(TARGET main POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${sherpa_SOURCE_DIR}/lib $<TARGET_FILE_DIR:main>
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${sherpa_SOURCE_DIR}/bin $<TARGET_FILE_DIR:main>
+)
