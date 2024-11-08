@@ -1,6 +1,11 @@
 build/
-*.bin
-*.wav
-*.onnx
 sherpa-onnx-*
+.cache
+
+*.bin
+*.onnx
+*.wav
+*.m4a
+
 .DS_Store
+compile_commands.json

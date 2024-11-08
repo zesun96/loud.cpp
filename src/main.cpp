@@ -1,4 +1,3 @@
-
 /*
 Transcribe audio with whisper.cpp and diarize with sherpa-onnx
 
@@ -26,8 +25,8 @@ cmake --build build
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <nlohmann/json.hpp>
 #include <stdio.h>
-#include <string>
 #include <vector>
 
 static void cb_log_disable(enum ggml_log_level, const char *, void *) {}

@@ -5,14 +5,12 @@
             "includePath": [
                 "${workspaceFolder}",
                 "${workspaceFolder}/build/_deps/sherpa-src/include",
+                "${workspaceFolder}/build/_deps/json-src/include/**",
+                "${workspaceFolder}/build/_deps/json-src/include/nlohmann/**",
                 "${workspaceFolder}/build/_deps/whisper-src/include/**",
                 "${workspaceFolder}/build/_deps/whisper-src/ggml/**"
             ],
             "defines": [],
-            // "macFrameworkPath": [
-            //     "/Library/Developer/CommandLineTools/SDKs/MacOSX14.sdk/System/Library/Frameworks"
-            // ],
-            // "compilerPath": "/opt/homebrew/opt/llvm/bin/clang",
             "cStandard": "c17",
             "cppStandard": "c++17",
             "intelliSenseMode": "macos-clang-arm64"

@@ -1,10 +1,8 @@
 # Building
 
-
 ### Prerequisites
 
 [Clang](https://releases.llvm.org/download.html) | [Cmake](https://cmake.org/download/)
-
 
 Windows
 
@@ -27,4 +25,12 @@ Build release
 ```console
 cmake -B build -DCMAKE_BUILD_TYPE=Release .
 cmake --build build --config Release --target loud
+```
+
+## Gotchas
+
+OpenMP not found on macOS
+
+```console
+export OpenMP_ROOT=$(brew --prefix)/opt/libomp
 ```

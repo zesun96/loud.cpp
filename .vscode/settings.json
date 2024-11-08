@@ -1,18 +1,9 @@
 {
     "editor.formatOnSave": true,
-    "clang-tidy.compilerArgs": [
-        "-I./build/_deps/whisper-src/include",
-        "-I./build/_deps/whisper-src/ggml/include",
-        "-I./build/_deps/sherpa-src/include"
-    ],
+    "cmake.buildDirectory": "${workspaceFolder}/build",
     "clangd.arguments": [
-        "-I./build/_deps/whisper-src/include",
-        "-I./build/_deps/whisper-src/ggml/include",
-        "-I./build/_deps/sherpa-src/include"
+        "--compile-commands-dir=${workspaceFolder}/build",
+        "--completion-style=detailed",
+        "--header-insertion=never"
     ],
-    "files.associations": {
-        "*.embeddedhtml": "html",
-        "iomanip": "cpp",
-        "ios": "cpp"
-    }
 }
