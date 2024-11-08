@@ -14,6 +14,14 @@ add_executable(main src/main.cpp)
 set_target_properties(main PROPERTIES OUTPUT_NAME "loud")
 set_target_properties(main PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
+# -DCOMMIT_HASH="$(git rev-parse --short HEAD)"
+add_compile_definitions(COMMIT_HASH="${COMMIT_HASH}")
+
+# Used in __FILE__ for relative path
+string(LENGTH "${PROJECT_SOURCE_DIR}/" SOURCE_PATH_SIZE)
+add_definitions("-DSOURCE_PATH_SIZE=${SOURCE_PATH_SIZE}")
+add_definitions("-DSOURCE_PATH=\"${PROJECT_SOURCE_DIR}\"")
+
 include(FetchContent)
 include(CMake/Cli11.cmake)
 include(CMake/Json.cmake)
