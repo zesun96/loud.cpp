@@ -12,12 +12,12 @@ tar xvf sherpa-onnx-pyannote-segmentation-3-0.tar.bz2
 rm sherpa-onnx-pyannote-segmentation-3-0.tar.bz2
 
 wget \
-  https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-recongition-models/nemo_en_titanet_large.onnx
+  https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-recongition-models/nemo_en_titanet_small.onnx
 
 Build:
 cmake -B build .
 cmake --build build
-./target/bin/loud ggml-tiny.bin single.wav --json transcript.json
+./build/bin/loud ggml-tiny.bin single.wav --json transcript.json
 */
 
 #include "main.h"
@@ -61,7 +61,7 @@ whisper_full_params create_whisper_params() {
   wparams.debug_mode = false;
   wparams.no_timestamps = true;
   wparams.print_special = false;
-  wparams.single_segment = true;
+  wparams.single_segment = false;
   // wparams.split_on_word = true;
 
   return wparams;
@@ -80,12 +80,12 @@ const SherpaOnnxOfflineSpeakerDiarization *create_sd() {
   SherpaOnnxOfflineSpeakerDiarizationConfig config;
   memset(&config, 0, sizeof(config));
 #if defined(__APPLE__)
-  config.segmentation.provider = "coreml";
-  config.embedding.provider = "coreml";
+  config.segmentation.provider = "cpu";
+  config.embedding.provider = "cpu";
 #endif
   config.segmentation.pyannote.model =
       "sherpa-onnx-pyannote-segmentation-3-0/model.onnx";
-  config.embedding.model = "nemo_en_titanet_large.onnx";
+  config.embedding.model = "nemo_en_titanet_small.onnx";
   config.clustering.num_clusters = 4;
   const SherpaOnnxOfflineSpeakerDiarization *sd =
       SherpaOnnxCreateOfflineSpeakerDiarization(&config);
