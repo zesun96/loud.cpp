@@ -17,7 +17,7 @@ wget \
 Build:
 cmake -B build .
 cmake --build build
-./target/bin/loud ggml-tiny.bin single.wav
+./target/bin/loud ggml-tiny.bin single.wav --json transcript.json
 */
 
 #include "nlohmann/json_fwd.hpp"

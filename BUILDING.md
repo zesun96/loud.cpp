@@ -16,7 +16,7 @@ Build
 
 ```console
 cmake -B build .
-cmake --build build --target loud
+cmake --build build --target main
 ./build/bin/loud
 ```
 
@@ -24,7 +24,7 @@ Build release
 
 ```console
 cmake -B build -DCMAKE_BUILD_TYPE=Release .
-cmake --build build --config Release --target loud
+cmake --build build --config Release --target main
 ```
 
 ## Gotchas
