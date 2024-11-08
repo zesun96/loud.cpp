@@ -13,6 +13,7 @@ cmake --build build
 */
 
 #include "whisper.h"
+#include "sherpa-onnx/c-api/c-api.h"
 #include <iostream>
 
 int main(int argc, char *argv[]) {
@@ -25,8 +26,15 @@ int main(int argc, char *argv[]) {
   const char *model_path = argv[1];
   const char *audio_file = argv[2];
 
+
   std::cout << "Model path: " << model_path << std::endl;
   std::cout << "Audio file path: " << audio_file << std::endl;
+
+  const SherpaOnnxWave* wave = SherpaOnnxReadWave(audio_file);
+  if (!wave) {
+    std::cerr << "Failed to read audio file: " << audio_file << std::endl;
+    return 2;
+  }
 
   struct whisper_context_params cparams = whisper_context_default_params();
   struct whisper_context *ctx =

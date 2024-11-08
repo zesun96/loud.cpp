@@ -10,6 +10,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
+# Create our executable
+add_executable(loud src/main.cpp)
+
+
 # Force static libraries globally
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
 
@@ -36,8 +40,45 @@ endif()
 # Now make whisper available with our options
 FetchContent_MakeAvailable(whisper)
 
-# Create our executable
-add_executable(loud src/main.cpp)
+# Fetch sherpa-onnx# Determine Sherpa-ONNX URL based on OS
+if(WIN32)
+    set(SHERPA_URL https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.10.30/sherpa-onnx-v1.10.30-win-x64-shared.tar.bz2)
+elseif(UNIX AND NOT APPLE)
+    set(SHERPA_URL https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.10.30/sherpa-onnx-v1.10.30-linux-x64-shared.tar.bz2)
+elseif(APPLE)
+    set(SHERPA_URL https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.10.30/sherpa-onnx-v1.10.30-osx-universal2-shared.tar.bz2)
+endif()
+
+# Fetch sherpa-onnx
+FetchContent_Declare(
+    sherpa
+    URL ${SHERPA_URL}
+)
+
+# Fetch sherpa-onnx
+FetchContent_Declare(
+    sherpa
+    URL ${SHERPA_URL}
+)
+
+# Make sherpa available
+FetchContent_MakeAvailable(sherpa)
+
+# Add sherpa-onnx include and link directories
+target_include_directories(loud PRIVATE ${sherpa_SOURCE_DIR}/include/sherpa-onnx/c-api)
+target_include_directories(loud PRIVATE ${sherpa_SOURCE_DIR}/include)
+target_link_directories(loud PRIVATE ${sherpa_SOURCE_DIR}/lib)
+target_link_libraries(loud PRIVATE
+    onnxruntime
+    sherpa-onnx-c-api
+    cargs
+)
+
+add_custom_command(TARGET loud POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${sherpa_SOURCE_DIR}/bin $<TARGET_FILE_DIR:loud>
+)
+
 
 # Include directories
 target_include_directories(loud PRIVATE

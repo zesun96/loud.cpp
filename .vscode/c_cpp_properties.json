@@ -4,7 +4,8 @@
             "name": "Mac",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/build/**"
+                "${workspaceFolder}/build/_deps/sherpa-src/include/**",
+                "${workspaceFolder}/build/_deps/whisper-src/include/**"
             ],
             "defines": [],
             "macFrameworkPath": [
