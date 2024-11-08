@@ -1,9 +1,5 @@
 {
     "editor.formatOnSave": true,
     "cmake.buildDirectory": "${workspaceFolder}/build",
-    "clangd.arguments": [
-        "--compile-commands-dir",
-        "${workspaceFolder}/build"
-    ],
     "C_Cpp.intelliSenseEngine": "disabled" // Enable only when needs debugging
 }
