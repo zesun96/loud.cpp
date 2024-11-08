@@ -101,8 +101,7 @@ create_sd(const std::string &segmentation_model_path,
   config.segmentation.pyannote.model = segmentation_model_path.c_str();
   config.embedding.model = embedding_model_path.c_str();
   config.clustering.num_clusters = num_clusters;
-  const SherpaOnnxOfflineSpeakerDiarization *sd =
-      SherpaOnnxCreateOfflineSpeakerDiarization(&config);
+  auto *sd = SherpaOnnxCreateOfflineSpeakerDiarization(&config);
   if (!sd) {
     std::cerr << "Failed to initialize offline speaker diarization"
               << std::endl;
@@ -154,11 +153,6 @@ int main(int argc, char *argv[]) {
     return app.exit(e);
   }
 
-  if (!debug) {
-    // Supress whisper logs
-    whisper_log_set(cb_log_disable, NULL);
-  }
-
   // Diarize
   auto *wave = read_wave(audio_file);
   CHECK_NULL(wave);
@@ -175,13 +169,17 @@ int main(int argc, char *argv[]) {
   auto *segments =
       SherpaOnnxOfflineSpeakerDiarizationResultSortByStartTime(result);
 
-  struct whisper_context_params cparams = whisper_context_default_params();
-  struct whisper_context *ctx =
-      whisper_init_from_file_with_params(model_path.c_str(), cparams);
+  if (!debug) {
+    // Supress whisper logs
+    whisper_log_set(cb_log_disable, NULL);
+  }
+  auto cparams = whisper_context_default_params();
+  auto *ctx = whisper_init_from_file_with_params(model_path.c_str(), cparams);
   CHECK_NULL(ctx);
-  whisper_full_params wparams = create_whisper_params();
+  auto wparams = create_whisper_params();
 
   nlohmann::ordered_json result_json;
+  // Iterate diarize segments
   for (int32_t i = 0; i != num_segments; ++i) {
 
     // Calculate start and end samples for the segment
