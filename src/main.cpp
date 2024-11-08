@@ -61,14 +61,17 @@ void print_segment(const SherpaOnnxOfflineSpeakerDiarizationSegment &segment,
 whisper_full_params create_whisper_params() {
   whisper_full_params wparams =
       whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
-  wparams.strategy = WHISPER_SAMPLING_GREEDY;
+  // https://github.com/ggerganov/whisper.cpp/blob/master/examples/talk/talk.cpp
   wparams.new_segment_callback = NULL;
   wparams.language = "en";
   wparams.print_realtime = false;
   wparams.debug_mode = false;
   wparams.no_timestamps = true;
   wparams.print_special = false;
-  wparams.single_segment = false;
+  wparams.translate = false;
+  wparams.single_segment = true;
+  wparams.no_context = true;
+  wparams.max_tokens = 32;
   // wparams.split_on_word = true;
 
   return wparams;
@@ -206,8 +209,8 @@ int main(int argc, char *argv[]) {
       segment_data.resize(16000 * 30, 0.0f);
     }
     // Process the buffered (padded) segment with Whisper
-    if (whisper_full_parallel(ctx, wparams, segment_data.data(),
-                              segment_data.size(), 4) != 0) {
+    if (whisper_full(ctx, wparams, segment_data.data(),
+                              segment_data.size()) != 0) {
       std::cerr << argv[0] << ": Failed to process segment." << std::endl;
       return EXIT_FAILURE;
     }
