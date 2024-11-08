@@ -72,15 +72,23 @@ FetchContent_MakeAvailable(sherpa)
 target_include_directories(loud PRIVATE ${sherpa_SOURCE_DIR}/include/sherpa-onnx/c-api)
 target_include_directories(loud PRIVATE ${sherpa_SOURCE_DIR}/include)
 target_link_directories(loud PRIVATE ${sherpa_SOURCE_DIR}/lib)
+
 target_link_libraries(loud PRIVATE
-    onnxruntime
     sherpa-onnx-c-api
     cargs
+    $<$<NOT:$<PLATFORM_ID:Windows>>:onnxruntime>
 )
+
 
 add_custom_command(TARGET loud POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${sherpa_SOURCE_DIR}/bin $<TARGET_FILE_DIR:loud>
+)
+
+# Copy sherpa shared libs to bin folder
+add_custom_command(TARGET loud POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${sherpa_SOURCE_DIR}/lib $<TARGET_FILE_DIR:loud>
 )
 
 
