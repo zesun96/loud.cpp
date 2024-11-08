@@ -20,7 +20,10 @@ cmake --build build
 ./target/bin/loud ggml-tiny.bin single.wav
 */
 
+#include "nlohmann/json_fwd.hpp"
+#include <CLI/CLI.hpp>
 #include <iomanip>
+
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <sherpa-onnx/c-api/c-api.h>
@@ -32,21 +35,31 @@ cmake --build build
 static void cb_log_disable(enum ggml_log_level, const char *, void *) {}
 
 int main(int argc, char *argv[]) {
-  if (argc < 3) {
-    std::cerr << "Usage: " << argv[0] << " <model_path> <audio_file>"
-              << std::endl;
-    return 1;
+
+  CLI::App app{"Speech to text with ONNX and Whisper"};
+
+  std::string model_path;
+  std::string audio_file;
+  std::string json_path;
+  bool debug = false;
+
+  app.add_option("model", model_path, "Path to the model")->required();
+  app.add_option("audio", audio_file, "Path to the audio file")->required();
+  app.add_option("--json", json_path, "Path to save the JSON output");
+  app.add_flag("--debug", debug, "Enable debug output");
+
+  try {
+    app.parse(argc, argv);
+  } catch (const CLI::ParseError &e) {
+    return app.exit(e);
   }
 
-  whisper_log_set(cb_log_disable, NULL);
+  if (!debug) {
+    // Supress whisper logs
+    whisper_log_set(cb_log_disable, NULL);
+  }
 
-  const char *model_path = argv[1];
-  const char *audio_file = argv[2];
-
-  std::cout << "Model path: " << model_path << std::endl;
-  std::cout << "Audio file path: " << audio_file << std::endl;
-
-  const SherpaOnnxWave *wave = SherpaOnnxReadWave(audio_file);
+  const SherpaOnnxWave *wave = SherpaOnnxReadWave(audio_file.c_str());
   if (!wave) {
     std::cerr << "Failed to read audio file: " << audio_file << std::endl;
     return EXIT_FAILURE;
@@ -87,7 +100,7 @@ int main(int argc, char *argv[]) {
 
   struct whisper_context_params cparams = whisper_context_default_params();
   struct whisper_context *ctx =
-      whisper_init_from_file_with_params(model_path, cparams);
+      whisper_init_from_file_with_params(model_path.c_str(), cparams);
 
   if (!ctx) {
     std::cerr << "Error: Failed to initialize whisper context." << std::endl;
@@ -106,6 +119,7 @@ int main(int argc, char *argv[]) {
   wparams.single_segment = true;
   // wparams.split_on_word = true;
 
+  nlohmann::ordered_json result_json;
   for (int32_t i = 0; i != num_segments; ++i) {
 
     // Calculate start and end samples for the segment
@@ -141,16 +155,36 @@ int main(int argc, char *argv[]) {
     // Get and print segment transcription
     const int n_segments = whisper_full_n_segments(ctx);
 
-    std::ostringstream transcribed;
+    std::ostringstream text;
+
     for (int j = 0; j < n_segments; j++) {
-      const char *text = whisper_full_get_segment_text(ctx, j);
-      transcribed << text << " ";
+      const char *segment_text = whisper_full_get_segment_text(ctx, j);
+      text << segment_text << " ";
+    }
+
+    if (!json_path.empty()) {
+      result_json.push_back({{"text", text.str()},
+                             {"start", segments[i].start},
+                             {"end", segments[i].end},
+                             {"speaker", segments[i].speaker}});
     }
     std::cout << std::fixed << std::setprecision(3) << segments[i].start
               << " -- " << segments[i].end << " speaker_" << std::setw(2)
-              << std::setfill('0') << segments[i].speaker << ": "
-              << transcribed.str() << std::endl
+              << std::setfill('0') << segments[i].speaker << ": " << text.str()
+              << std::endl
               << std::flush;
+  }
+
+  // Write JSON file
+  if (!json_path.empty()) {
+    std::ofstream json_output(json_path);
+    if (json_output.is_open()) {
+      json_output << result_json.dump(4); // Pretty print JSON with indentation
+      std::cout << "JSON result saved to: " << json_path << std::endl;
+    } else {
+      std::cerr << "Error: Could not open file " << json_path << " for writing."
+                << std::endl;
+    }
   }
 
   SherpaOnnxOfflineSpeakerDiarizationDestroySegment(segments);

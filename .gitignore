@@ -6,6 +6,7 @@ sherpa-onnx-*
 *.onnx
 *.wav
 *.m4a
+*.json
 
 .DS_Store
 compile_commands.json

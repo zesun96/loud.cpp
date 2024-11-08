@@ -14,6 +14,8 @@ add_executable(main src/main.cpp)
 set_target_properties(main PROPERTIES OUTPUT_NAME "loud")
 set_target_properties(main PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
+include(FetchContent)
+include(CMake/Cli11.cmake)
 include(CMake/Json.cmake)
 include(CMake/Sherpa.cmake)
 include(CMake/Whisper.cmake)
