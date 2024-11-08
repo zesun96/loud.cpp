@@ -25,7 +25,9 @@ cmake --build build
 #include "whisper.h"
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <stdio.h>
+#include <string>
 #include <vector>
 
 static void cb_log_disable(enum ggml_log_level, const char *, void *) {}
@@ -54,6 +56,10 @@ int main(int argc, char *argv[]) {
   // Diarize
   SherpaOnnxOfflineSpeakerDiarizationConfig config;
   memset(&config, 0, sizeof(config));
+#if defined(__APPLE__)
+  config.segmentation.provider = "coreml";
+  config.embedding.provider = "coreml";
+#endif
   config.segmentation.pyannote.model =
       "sherpa-onnx-pyannote-segmentation-3-0/model.onnx";
   config.embedding.model = "nemo_en_titanet_large.onnx";
@@ -98,6 +104,7 @@ int main(int argc, char *argv[]) {
   wparams.debug_mode = false;
   wparams.no_timestamps = true;
   wparams.print_special = false;
+  wparams.single_segment = true;
   // wparams.split_on_word = true;
 
   for (int32_t i = 0; i != num_segments; ++i) {
@@ -105,6 +112,11 @@ int main(int argc, char *argv[]) {
     // Calculate start and end samples for the segment
     int32_t start_sample = static_cast<int32_t>(segments[i].start * 16000);
     int32_t end_sample = static_cast<int32_t>(segments[i].end * 16000);
+
+    // skip segments that are less than 1s
+    if ((end_sample - start_sample) < 16000) {
+      continue;
+    }
 
     // Ensure start and end are within bounds
     if (start_sample < 0)
@@ -118,7 +130,7 @@ int main(int argc, char *argv[]) {
 
     // Fill with zeros up to 10 seconds
     if (segment_data.size() < 16000 * 30) {
-      segment_data.resize(16000 * 10, 0.0f);
+      segment_data.resize(16000 * 30, 0.0f);
     }
     // Process the buffered (padded) segment with Whisper
     if (whisper_full_parallel(ctx, wparams, segment_data.data(),
@@ -129,17 +141,17 @@ int main(int argc, char *argv[]) {
 
     // Get and print segment transcription
     const int n_segments = whisper_full_n_segments(ctx);
+
+    std::ostringstream transcribed;
     for (int j = 0; j < n_segments; j++) {
       const char *text = whisper_full_get_segment_text(ctx, j);
-
-      // Output the modified text
-      std::cout << std::fixed << std::setprecision(3) << segments[i].start
-                << " -- " << segments[i].end << " speaker_" << std::setw(2)
-                << std::setfill('0') << segments[i].speaker << ": " << text
-                << std::endl
-                << std::flush;
-      break;
+      transcribed << text << " ";
     }
+    std::cout << std::fixed << std::setprecision(3) << segments[i].start
+              << " -- " << segments[i].end << " speaker_" << std::setw(2)
+              << std::setfill('0') << segments[i].speaker << ": "
+              << transcribed.str() << std::endl
+              << std::flush;
   }
 
   SherpaOnnxOfflineSpeakerDiarizationDestroySegment(segments);
