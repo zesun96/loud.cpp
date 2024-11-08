@@ -27,17 +27,17 @@ set(GGML_CCACHE OFF CACHE BOOL "")
 set(WHISPER_BUILD_TESTS OFF CACHE BOOL "")
 set(WHISPER_BUILD_EXAMPLES OFF CACHE BOOL "")
 set(WHISPER_BUILD_SERVER OFF CACHE BOOL "")
-set(WHISPER_COREML ON CACHE BOOL "")
-set(GGML_METAL ON CACHE BOOL "")
+
+if(APPLE)
+    set(WHISPER_COREML ON CACHE BOOL "")
+    set(GGML_METAL ON CACHE BOOL "")
+endif()
 
 # Now make whisper available with our options
 FetchContent_MakeAvailable(whisper)
 
 # Create our executable
 add_executable(loud src/main.cpp)
-
-# Disable deprecated declarations warning
-target_compile_options(loud PRIVATE -Wno-deprecated-declarations)
 
 # Include directories
 target_include_directories(loud PRIVATE
