@@ -20,10 +20,10 @@ cmake --build build
 ./target/bin/loud ggml-tiny.bin single.wav --json transcript.json
 */
 
+#include "main.h"
 #include "nlohmann/json_fwd.hpp"
 #include <CLI/CLI.hpp>
 #include <iomanip>
-
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <sherpa-onnx/c-api/c-api.h>
@@ -32,7 +32,81 @@ cmake --build build
 #include <vector>
 #include <whisper.h>
 
-static void cb_log_disable(enum ggml_log_level, const char *, void *) {}
+void save_json(const std::string &json_path,
+               const nlohmann::ordered_json &result_json) {
+  std::ofstream json_output(json_path);
+  if (json_output.is_open()) {
+    json_output << result_json.dump(4); // Pretty print
+  } else {
+    std::cerr << "Error: Could not open file for writing: " << json_path
+              << std::endl;
+  }
+}
+
+void print_segment(const SherpaOnnxOfflineSpeakerDiarizationSegment &segment,
+                   const std::string &text) {
+  std::cout << std::fixed << std::setprecision(3) << segment.start << " -- "
+            << segment.end << " speaker_" << std::setw(2) << std::setfill('0')
+            << segment.speaker << ": " << text << std::endl
+            << std::flush;
+}
+
+whisper_full_params create_whisper_params() {
+  whisper_full_params wparams =
+      whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
+  wparams.strategy = WHISPER_SAMPLING_GREEDY;
+  wparams.new_segment_callback = NULL;
+  wparams.language = "en";
+  wparams.print_realtime = false;
+  wparams.debug_mode = false;
+  wparams.no_timestamps = true;
+  wparams.print_special = false;
+  wparams.single_segment = true;
+  // wparams.split_on_word = true;
+
+  return wparams;
+}
+
+const SherpaOnnxWave *read_wave(const std::string &path) {
+  const SherpaOnnxWave *wave = SherpaOnnxReadWave(path.c_str());
+  if (!wave) {
+    std::cerr << "Failed to read audio file: " << path << std::endl;
+    return nullptr;
+  }
+  return wave;
+}
+
+const SherpaOnnxOfflineSpeakerDiarization *create_sd() {
+  SherpaOnnxOfflineSpeakerDiarizationConfig config;
+  memset(&config, 0, sizeof(config));
+#if defined(__APPLE__)
+  config.segmentation.provider = "coreml";
+  config.embedding.provider = "coreml";
+#endif
+  config.segmentation.pyannote.model =
+      "sherpa-onnx-pyannote-segmentation-3-0/model.onnx";
+  config.embedding.model = "nemo_en_titanet_large.onnx";
+  config.clustering.num_clusters = 4;
+  const SherpaOnnxOfflineSpeakerDiarization *sd =
+      SherpaOnnxCreateOfflineSpeakerDiarization(&config);
+  if (!sd) {
+    std::cerr << "Failed to initialize offline speaker diarization"
+              << std::endl;
+    return nullptr;
+  }
+  return sd;
+}
+
+int32_t diarization_progress_callback(int32_t num_processed_chunk,
+                                      int32_t num_total_chunks, void *arg) {
+  float progress =
+      (static_cast<float>(num_processed_chunk) / num_total_chunks) * 100.0f;
+
+  std::cout << "Diarization... " << static_cast<int>(progress) << "%"
+            << std::endl;
+
+  return 0;
+}
 
 int main(int argc, char *argv[]) {
 
@@ -59,65 +133,26 @@ int main(int argc, char *argv[]) {
     whisper_log_set(cb_log_disable, NULL);
   }
 
-  const SherpaOnnxWave *wave = SherpaOnnxReadWave(audio_file.c_str());
-  if (!wave) {
-    std::cerr << "Failed to read audio file: " << audio_file << std::endl;
-    return EXIT_FAILURE;
-  }
-
   // Diarize
-  SherpaOnnxOfflineSpeakerDiarizationConfig config;
-  memset(&config, 0, sizeof(config));
-#if defined(__APPLE__)
-  config.segmentation.provider = "coreml";
-  config.embedding.provider = "coreml";
-#endif
-  config.segmentation.pyannote.model =
-      "sherpa-onnx-pyannote-segmentation-3-0/model.onnx";
-  config.embedding.model = "nemo_en_titanet_large.onnx";
-  config.clustering.num_clusters = 4;
-  const SherpaOnnxOfflineSpeakerDiarization *sd =
-      SherpaOnnxCreateOfflineSpeakerDiarization(&config);
-  if (!sd) {
-    std::cerr << "Failed to initialize offline speaker diarization"
-              << std::endl;
-    return EXIT_FAILURE;
-  }
+  auto *wave = read_wave(audio_file);
+  CHECK_NULL(wave);
+  auto *sd = create_sd();
+  CHECK_NULL(sd);
 
-  const SherpaOnnxOfflineSpeakerDiarizationResult *result =
-      SherpaOnnxOfflineSpeakerDiarizationProcess(sd, wave->samples,
-                                                 wave->num_samples);
-  if (!result) {
-    std::cerr << "Failed to do speaker diarization" << std::endl;
-    return EXIT_FAILURE;
-  }
-
+  auto *result = SherpaOnnxOfflineSpeakerDiarizationProcessWithCallback(
+      sd, wave->samples, wave->num_samples, diarization_progress_callback,
+      nullptr);
+  CHECK_NULL(result);
   int32_t num_segments =
       SherpaOnnxOfflineSpeakerDiarizationResultGetNumSegments(result);
-
-  const SherpaOnnxOfflineSpeakerDiarizationSegment *segments =
+  auto *segments =
       SherpaOnnxOfflineSpeakerDiarizationResultSortByStartTime(result);
 
   struct whisper_context_params cparams = whisper_context_default_params();
   struct whisper_context *ctx =
       whisper_init_from_file_with_params(model_path.c_str(), cparams);
-
-  if (!ctx) {
-    std::cerr << "Error: Failed to initialize whisper context." << std::endl;
-    return EXIT_FAILURE;
-  }
-
-  whisper_full_params wparams =
-      whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
-  wparams.strategy = WHISPER_SAMPLING_GREEDY;
-  wparams.new_segment_callback = NULL;
-  wparams.language = "en";
-  wparams.print_realtime = false;
-  wparams.debug_mode = false;
-  wparams.no_timestamps = true;
-  wparams.print_special = false;
-  wparams.single_segment = true;
-  // wparams.split_on_word = true;
+  CHECK_NULL(ctx);
+  whisper_full_params wparams = create_whisper_params();
 
   nlohmann::ordered_json result_json;
   for (int32_t i = 0; i != num_segments; ++i) {
@@ -168,25 +203,15 @@ int main(int argc, char *argv[]) {
                              {"end", segments[i].end},
                              {"speaker", segments[i].speaker}});
     }
-    std::cout << std::fixed << std::setprecision(3) << segments[i].start
-              << " -- " << segments[i].end << " speaker_" << std::setw(2)
-              << std::setfill('0') << segments[i].speaker << ": " << text.str()
-              << std::endl
-              << std::flush;
+    print_segment(segments[i], text.str());
   }
 
   // Write JSON file
   if (!json_path.empty()) {
-    std::ofstream json_output(json_path);
-    if (json_output.is_open()) {
-      json_output << result_json.dump(4); // Pretty print JSON with indentation
-      std::cout << "JSON result saved to: " << json_path << std::endl;
-    } else {
-      std::cerr << "Error: Could not open file " << json_path << " for writing."
-                << std::endl;
-    }
+    save_json(json_path, result_json);
   }
 
+  // Cleanup
   SherpaOnnxOfflineSpeakerDiarizationDestroySegment(segments);
   SherpaOnnxOfflineSpeakerDiarizationDestroyResult(result);
   SherpaOnnxDestroyOfflineSpeakerDiarization(sd);
