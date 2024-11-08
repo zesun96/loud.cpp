@@ -1,3 +1,6 @@
 build/
 *.bin
 *.wav
+*.onnx
+sherpa-onnx-*
+.DS_Store

@@ -9,5 +9,10 @@
         "-I./build/_deps/whisper-src/include",
         "-I./build/_deps/whisper-src/ggml/include",
         "-I./build/_deps/sherpa-src/include"
-    ]
+    ],
+    "files.associations": {
+        "*.embeddedhtml": "html",
+        "iomanip": "cpp",
+        "ios": "cpp"
+    }
 }
