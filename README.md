@@ -4,7 +4,7 @@ Whisper.cpp with diarization
 
 ## Building
 
-See [BUILDING.md](BUILDING.md)
+See [BUILDING.md](docs/BUILDING.md)
 
 ## Normalize wav file
 
