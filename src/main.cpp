@@ -4,7 +4,16 @@ Transcribe audio with whisper.cpp and diarize with sherpa-onnx
 
 Prepare models:
 wget https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
+
 wget https://github.com/thewh1teagle/vibe/raw/refs/heads/main/samples/single.wav
+
+wget \
+  https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-segmentation-models/sherpa-onnx-pyannote-segmentation-3-0.tar.bz2
+tar xvf sherpa-onnx-pyannote-segmentation-3-0.tar.bz2
+rm sherpa-onnx-pyannote-segmentation-3-0.tar.bz2
+
+wget \
+  https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-recongition-models/nemo_en_titanet_large.onnx
 
 Build:
 cmake -B build .

@@ -5,6 +5,15 @@
 
 [Clang](https://releases.llvm.org/download.html) | [Cmake](https://cmake.org/download/)
 
+
+Windows
+
+```console
+winget install -e --id GnuWin32.Tar
+winget install -e --id JernejSimoncic.Wget
+winget install -e --id Kitware.CMake
+```
+
 Build
 
 ```console
