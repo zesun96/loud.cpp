@@ -11,3 +11,4 @@
 ## 2024-11-08
 
 - Init
+- Ensure build on macOS / Linux / Windows
