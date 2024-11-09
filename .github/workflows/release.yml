@@ -16,7 +16,7 @@ jobs:
             archive: loud-darwin-arm64.tar.gz
 
           - platform: "macos-latest" # macOS x86-64
-            cmake-args: '-DFFMPEG_DOWNLOAD=ON -DCMAKE_OSX_ARCHITECTURES="x86_64" -DCMAKE_SYSTEM_NAME=Darwin"'
+            cmake-args: '-DFFMPEG_DOWNLOAD=ON -DCMAKE_OSX_ARCHITECTURES="x86_64" -DCMAKE_SYSTEM_NAME="Darwin"'
             archive: loud-darwin-x86-64.tar.gz
 
           - platform: "ubuntu-22.04" # Linux x86-64
