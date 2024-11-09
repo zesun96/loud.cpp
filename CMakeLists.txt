@@ -18,8 +18,8 @@ target_include_directories(main PRIVATE "${CMAKE_SOURCE_DIR}/include")
 set_target_properties(main PROPERTIES OUTPUT_NAME "loud")
 set_target_properties(main PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
-# -DCOMMIT_HASH="$(git rev-parse --short HEAD)"
-add_compile_definitions(COMMIT_HASH="${COMMIT_HASH}")
+# -DVERSION="$(git rev-parse --short HEAD)"
+add_compile_definitions(VERSION="${VERSION}")
 
 # Used in __FILE__ for relative path
 string(LENGTH "${PROJECT_SOURCE_DIR}/" SOURCE_PATH_SIZE)
@@ -37,10 +37,19 @@ option(FFMPEG_DOWNLOAD "Download and set up FFmpeg" OFF)
 
 # External libraries
 include(FetchContent)
-include(CMake/cli11.cmake)
-include(CMake/json.cmake)
-include(CMake/sherpa.cmake)
-include(CMake/whisper.cmake)
+include(cmake/cli11.cmake)
+include(cmake/json.cmake)
+include(cmake/sherpa.cmake)
+include(cmake/whisper.cmake)
 if (FFMPEG_DOWNLOAD)
-    include(Cmake/static-ffmpeg.cmake)
+    include(cmake/static-ffmpeg.cmake)
+endif()
+
+if(APPLE)
+    # Add additional rpath
+    add_custom_command(TARGET main
+        POST_BUILD COMMAND 
+        ${CMAKE_INSTALL_NAME_TOOL} -add_rpath "@executable_path"
+        $<TARGET_FILE:main>
+    )
 endif()

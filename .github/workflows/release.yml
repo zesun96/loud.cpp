@@ -1,37 +1,93 @@
-name: macOS Build and Upload Artifact
+name: Build and Upload Artifact
 
 on:
   workflow_dispatch: null
 
 jobs:
   build:
-    runs-on: macos-latest
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: "macos-latest" # for Arm based macs (M1 and above).
+            cmake-args: "-DFFMPEG_DOWNLOAD=ON"
+            archive: loud-darwin.tar.gz
+          - platform: "ubuntu-22.04" # Ubuntu 22.04 x86_64 (Works on 24.04 as well)
+            cmake-args: "-DFFMPEG_DOWNLOAD=ON"
+            archive: loud-linux.tar.gz
+          - platform: "windows-latest" # Windows x86_64
+            cmake-args: "-DGGML_VULKAN=ON -DFFMPEG_DOWNLOAD=ON"
+            archive: loud-windows.zip
+    runs-on: ${{ matrix.platform }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-
-      - name: Install LLVM and Clang
-        uses: KyleMayes/install-llvm-action@v2
         with:
-          version: "10.0"
+          fetch-depth: 0
 
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v2
       - uses: seanmiddleditch/gha-setup-ninja@master
 
+      - name: Prepare Vulkan SDK (Linux)
+        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        with:
+          vulkan-query-version: 1.3.239.0
+          vulkan-use-cache: true
+          vulkan-components: Vulkan-Headers, Vulkan-Loader
+        if: contains(matrix.platform, 'ubuntu')
+
+      - name: Prepare Vulkan SDK (Windows)
+        run: |
+          C:\msys64\usr\bin\wget https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe
+          7z x VulkanSDK-1.3.296.0-Installer.exe -ovulkan-sdk
+          echo "VULKAN_SDK=$PWD/vulkan-sdk" >> $env:GITHUB_ENV
+          echo "$PWD/vulkan-sdk/Bin" >> $env:GITHUB_PATH
+        if: contains(matrix.platform, 'windows')
+
       - name: Build with CMake and Ninja
         run: |
-          cmake -G Ninja -B build .
+          cmake -G Ninja -B build . -DVERSION="$(git rev-parse --short HEAD)" ${{ matrix.cmake-args }}
           cmake --build build --config Release
 
-      - name: Rename output and package
+      - name: Rename output and package (Unix)
         run: |
           mv build/bin build/loud
-          tar -czf build/loud.tar.gz -C build loud
+          tar -czf build/${{ matrix.archive }} -C build loud
+        if: (!contains(matrix.platform, 'windows'))
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: loud-artifact
-          path: build/loud.tar.gz
+      - name: Rename output and package (Windows)
+        run: |
+          Move-Item build/bin build/loud
+          7z a build\${{ matrix.archive }} build\loud
+        if: contains(matrix.platform, 'windows')
+
+      # - name: Upload build artifact (Unix)
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: loud-${{ matrix.platform }}
+      #     path: build/loud.tar.gz
+      #   if: (!contains(matrix.platform, 'windows'))
+
+      # - name: Upload build artifact (Windows)
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     path: build/loud.zip
+      #   if: contains(matrix.platform, 'windows')
+
+      - name: Upload release (Windows)
+        run: |
+          gh release upload $(git describe --tags --abbrev=0) build/${{ matrix.archive }} --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+        if: contains(matrix.platform, 'windows')
+
+      - name: Upload release (Unix)
+        run: |
+          gh release upload `git describe --tags --abbrev=0` build/${{ matrix.archive }} --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+        if: (!contains(matrix.platform , 'windows'))
