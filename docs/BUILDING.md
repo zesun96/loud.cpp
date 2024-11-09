@@ -40,6 +40,19 @@ Download and set up FFmpeg during compile automatically:
 cmake -B build . -DCMAKE_BUILD_TYPE=Release -DFFMPEG_DOWNLOAD=ON
 ```
 
+Build with vulkan sdk on Windows
+
+See https://vulkan.lunarg.com/sdk/home
+
+```console
+sudo apt-get install -y libvulkan1 mesa-vulkan-drivers
+```
+
+```console
+$env:VULKAN_SDK = "C:\VulkanSDK\1.3.296.0"
+cmake -B build . -DCMAKE_BUILD_TYPE=Release -DGGML_VULKAN=ON
+```
+
 ## Gotchas
 
 OpenMP not found on macOS
