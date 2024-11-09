@@ -12,7 +12,8 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Prepare executable
-add_executable(main src/main.cpp src/ffmpeg.cpp)
+file(GLOB SRC_FILES "src/*.cpp")
+add_executable(main ${SRC_FILES})
 target_include_directories(main PRIVATE "${CMAKE_SOURCE_DIR}/include")
 set_target_properties(main PROPERTIES OUTPUT_NAME "loud")
 set_target_properties(main PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")

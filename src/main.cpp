@@ -27,6 +27,7 @@ Run:
 #include "main.h"
 #include "ffmpeg.h"
 #include "nlohmann/json_fwd.hpp"
+#include "spinner.h"
 #include <CLI/CLI.hpp>
 #include <cstdint>
 #include <cstdlib>
@@ -135,13 +136,29 @@ create_sd(const std::string &segmentation_model_path,
   return sd;
 }
 
+std::mutex spinnerMutex;
 int32_t diarization_progress_callback(int32_t num_processed_chunk,
                                       int32_t num_total_chunks, void *arg) {
+
+  Spinner *spinner = static_cast<Spinner *>(arg);
+  CHECK_NULL(spinner);
   float progress =
       (static_cast<float>(num_processed_chunk) / num_total_chunks) * 100.0f;
 
-  std::cout << "Diarization... " << static_cast<int>(progress) << "%"
-            << std::endl;
+  {
+    std::lock_guard<std::mutex> lock(
+        spinnerMutex); // Lock mutex for thread safety
+
+    // Update spinner message with progress
+    spinner->updateMessage("Diarization... " +
+                           std::to_string(static_cast<int>(progress)) + "%");
+
+    // Stop the spinner if progress is complete
+    if (progress >= 100.0f) {
+      spinner->stop();
+      std::cout << "✓ Diarization complete!" << std::endl;
+    }
+  }
 
   return 0;
 }
@@ -209,9 +226,12 @@ int main(int argc, char *argv[]) {
                        num_speakers, onnx_provider, onnx_num_threads);
   CHECK_NULL(sd);
 
+  Spinner spinner("Starting diarization...");
+  spinner.start();
   auto *result = SherpaOnnxOfflineSpeakerDiarizationProcessWithCallback(
       sd, wave->samples, wave->num_samples, diarization_progress_callback,
-      nullptr);
+      &spinner);
+  spinner.stop();
   CHECK_NULL(result);
   int32_t num_segments =
       SherpaOnnxOfflineSpeakerDiarizationResultGetNumSegments(result);
