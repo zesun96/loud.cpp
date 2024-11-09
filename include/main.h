@@ -1,3 +1,6 @@
+#ifndef MAIN_H
+#define MAIN_H
+
 #include <whisper.h>
 
 #ifndef VERSION
@@ -31,3 +34,5 @@
 #endif
 
 static void cb_log_disable(enum ggml_log_level, const char *, void *) {}
+
+#endif

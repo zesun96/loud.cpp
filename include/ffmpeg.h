@@ -1,9 +1,9 @@
-#ifndef UTILS_H
-#define UTILS_H
+#ifndef FFMPEG_H
+#define FFMPEG_H
 
 #include <string>
 
-namespace utils {
+namespace ffmpeg {
 
 bool is_ffmpeg_installed();
 
@@ -16,6 +16,6 @@ void normalize_audio(std::string input, std::string output);
 std::string get_random_path(std::string suffix);
 std::string get_random_string(const int len);
 
-} // namespace utils
+} // namespace ffmpeg
 
 #endif

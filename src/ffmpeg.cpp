@@ -1,4 +1,3 @@
-#include "main.h"
 #include "subprocess/ProcessBuilder.hpp"
 #include "subprocess/basic_types.hpp"
 #include "subprocess/shell_utils.hpp"
@@ -14,7 +13,7 @@
 
 namespace fs = std::filesystem;
 
-namespace utils {
+namespace ffmpeg {
 
 bool is_ffmpeg_installed() {
   auto path = subprocess::find_program("ffmpeg");
@@ -131,4 +130,4 @@ void show_ffmpeg_normalize_suggestion(const std::string &audio_path, int argc,
   std::cout << "\n";
 }
 
-} // namespace utils
+} // namespace ffmpeg
