@@ -2,7 +2,7 @@
 
 ### Prerequisites
 
-[Clang](https://releases.llvm.org/download.html) | [Cmake](https://cmake.org/download/)
+[Clang](https://releases.llvm.org/download.html) | [Cmake](https://cmake.org/download/) | [Ninja](https://ninja-build.org/)
 
 Windows
 
