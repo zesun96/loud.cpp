@@ -34,6 +34,12 @@ Run
 ./build/bin/loud -h
 ```
 
+Download and set up FFmpeg during compile automatically:
+
+```console
+cmake -B build . -DCMAKE_BUILD_TYPE=Release -DFFMPEG_DOWNLOAD=ON
+```
+
 ## Gotchas
 
 OpenMP not found on macOS

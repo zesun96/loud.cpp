@@ -30,9 +30,16 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
+# Options
+
+option(FFMPEG_DOWNLOAD "Download and set up FFmpeg" OFF)
+
 # External libraries
 include(FetchContent)
 include(CMake/Cli11.cmake)
 include(CMake/Json.cmake)
 include(CMake/Sherpa.cmake)
 include(CMake/Whisper.cmake)
+if (FFMPEG_DOWNLOAD)
+    include(Cmake/Ffmpeg.cmake)
+endif()
