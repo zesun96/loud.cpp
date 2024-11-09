@@ -34,6 +34,17 @@ jobs:
           # Used for getting git tag
           fetch-depth: 0
 
+      - name: Prepare ninja
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            winget install --id=Ninja-build.Ninja -e
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            brew install ninja
+          elif [[ "$RUNNER_OS" == "Linux" ]]; then
+            sudo apt-get update
+            sudo apt install ninja-build
+          fi
+
       - name: Prepare Vulkan SDK (Linux)
         run: |
           sudo apt-get update
