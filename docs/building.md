@@ -84,3 +84,10 @@ gh release upload `git describe --tags --abbrev=0` loud.exe
 xattr -d com.apple.quarantine *
 chmod +x *
 ```
+
+## Cross compile from macOS arm to x64
+
+```console
+cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="x86_64" -DCMAKE_SYSTEM_NAME=Darwin .
+cmake --build build --config Release
+```

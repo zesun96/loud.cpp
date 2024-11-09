@@ -65,19 +65,6 @@ jobs:
           7z a build\${{ matrix.archive }} build\loud
         if: contains(matrix.platform, 'windows')
 
-      # - name: Upload build artifact (Unix)
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: loud-${{ matrix.platform }}
-      #     path: build/loud.tar.gz
-      #   if: (!contains(matrix.platform, 'windows'))
-
-      # - name: Upload build artifact (Windows)
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     path: build/loud.zip
-      #   if: contains(matrix.platform, 'windows')
-
       - name: Upload release (Windows)
         run: |
           gh release upload $(git describe --tags --abbrev=0) build/${{ matrix.archive }} --clobber
