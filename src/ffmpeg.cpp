@@ -1,10 +1,15 @@
 #include "main.h"
+#include "subprocess/ProcessBuilder.hpp"
+#include "subprocess/basic_types.hpp"
+#include "subprocess/shell_utils.hpp"
 #include <CLI/CLI.hpp>
 #include <filesystem>
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <random>
 #include <sherpa-onnx/c-api/c-api.h>
 #include <string>
+#include <subprocess.hpp>
 #include <whisper.h>
 
 namespace fs = std::filesystem;
@@ -12,16 +17,54 @@ namespace fs = std::filesystem;
 namespace utils {
 
 bool is_ffmpeg_installed() {
-  // Check for ffmpeg on Unix-like systems
-#ifdef __unix__
-  return std::system("ffmpeg -h > /dev/null 2>&1") == 0;
-#elif _WIN32
-  // Check for ffmpeg.exe on Windows
-  return std::system("ffmpeg -h >NUL 2>NUL") == 0;
-#else
-  // Unknown platform, assume ffmpeg is not installed
-  return false;
-#endif
+  auto path = subprocess::find_program("ffmpeg");
+  return !path.empty();
+}
+
+std::string get_random_string(int length) {
+  std::string str(
+      "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+
+  std::random_device rd;
+  std::mt19937 generator(rd());
+
+  std::shuffle(str.begin(), str.end(), generator);
+
+  // Ensure the length does not exceed the size of the string
+  if (length > str.size()) {
+    length = str.size();
+  }
+
+  return str.substr(0, length);
+}
+
+std::string get_random_path(std::string suffix) {
+  fs::path tmp_dir = fs::temp_directory_path();
+  std::string random_part = get_random_string(5);
+  fs::path random_path = tmp_dir / (random_part + suffix);
+  return random_path.string();
+}
+
+void normalize_audio(std::string input, std::string output) {
+  std::cout << "Normalizing audio from " << input << " to " << output;
+  using subprocess::CompletedProcess;
+  using subprocess::PipeOption;
+  using subprocess::RunBuilder;
+
+  CompletedProcess proc = subprocess::run(
+      {
+          "ffmpeg",
+          "-i",
+          input,
+          "-ar",
+          "16000",
+          "-ac",
+          "1",
+          "-c:a",
+          "pcm_s16le",
+          output,
+      },
+      RunBuilder().cout(PipeOption::cerr).cerr(PipeOption::pipe));
 }
 
 std::string get_relative_path(const std::string &absolute_path) {

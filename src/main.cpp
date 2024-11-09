@@ -28,9 +28,13 @@ Run:
 #include "ffmpeg.h"
 #include "nlohmann/json_fwd.hpp"
 #include "spinner.h"
+#include "subprocess/ProcessBuilder.hpp"
+#include "subprocess/basic_types.hpp"
+#include "subprocess/pipe.hpp"
 #include <CLI/CLI.hpp>
 #include <cstdint>
 #include <cstdlib>
+#include <exception>
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
@@ -39,6 +43,7 @@ Run:
 #include <sstream>
 #include <stdio.h>
 #include <string>
+#include <subprocess.hpp>
 #include <vector>
 #include <whisper.h>
 
@@ -101,7 +106,7 @@ whisper_full_params create_whisper_params(std::string language) {
 const SherpaOnnxWave *read_wave(const std::string &path) {
   const SherpaOnnxWave *wave = SherpaOnnxReadWave(path.c_str());
   if (!wave) {
-    std::cerr << "Failed to read audio file: " << path << std::endl;
+
     return nullptr;
   }
   return wave;
@@ -197,20 +202,26 @@ int main(int argc, char *argv[]) {
   // Check file extension
   fs::path audio_file_path(audio_file);
   std::string ext = audio_file_path.extension().string();
-  if (ext != ".wav") {
-    std::cerr << "File type '" << ext
-              << "' not supported. please specify wav file" << std::endl;
-    utils::show_ffmpeg_normalize_suggestion(audio_file, argc, argv);
-    return EXIT_FAILURE;
-  }
 
   // Diarize
-  auto *wave = read_wave(audio_file);
+  auto wave = read_wave(audio_file);
+  if (wave == nullptr) {
+    if (utils::is_ffmpeg_installed()) {
+      auto random_path = utils::get_random_path(".wav");
+      std::cout << "normalize audio..." << std::endl;
+      utils::normalize_audio(audio_file, random_path);
+      wave = read_wave(random_path);
+    } else {
+      utils::show_ffmpeg_normalize_suggestion(audio_file, argc, argv);
+      return EXIT_FAILURE;
+    }
+  }
   CHECK_NULL(wave);
+
   if (wave->sample_rate != 16000) {
-    std::cerr
-        << "Error: The audio file must have a sample rate of 16,000 Hz. Found "
-        << wave->sample_rate << " Hz." << std::endl;
+    std::cerr << "Error: The audio file must have a sample rate of 16,000 "
+                 "Hz. Found "
+              << wave->sample_rate << " Hz." << std::endl;
     utils::show_ffmpeg_normalize_suggestion(audio_file, argc, argv);
     return EXIT_FAILURE;
   }
