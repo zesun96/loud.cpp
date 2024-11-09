@@ -215,11 +215,11 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
+  Spinner spinner("Starting diarization...");
   auto *sd = create_sd(segmentation_model_path, embedding_model_path,
                        num_speakers, onnx_provider, onnx_num_threads);
   CHECK_NULL(sd);
 
-  Spinner spinner("Starting diarization...");
   spinner.start();
   auto *result = SherpaOnnxOfflineSpeakerDiarizationProcessWithCallback(
       sd, wave->samples, wave->num_samples, diarization_progress_callback,

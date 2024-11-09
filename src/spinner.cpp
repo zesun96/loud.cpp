@@ -5,10 +5,38 @@
 #include <thread>
 #include <vector>
 
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
+void hideCursor() {
+#ifdef _WIN32
+  // Windows-specific code to hide cursor
+  HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+  CONSOLE_CURSOR_INFO cursorInfo;
+  GetConsoleCursorInfo(consoleHandle, &cursorInfo);
+  cursorInfo.bVisible = FALSE; // Set visibility to FALSE
+  SetConsoleCursorInfo(consoleHandle, &cursorInfo);
+#endif
+}
+
+void showCursor() {
+#ifdef _WIN32
+  // Windows-specific code to show cursor
+  HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+  CONSOLE_CURSOR_INFO cursorInfo;
+  GetConsoleCursorInfo(consoleHandle, &cursorInfo);
+  cursorInfo.bVisible = TRUE; // Set visibility to TRUE
+  SetConsoleCursorInfo(consoleHandle, &cursorInfo);
+#endif
+}
+
 Spinner::Spinner(const std::string &initialMessage)
     : message(initialMessage), spinning(false) {}
 
 void Spinner::start() {
+  hideCursor();
+  SetConsoleOutputCP(65001);
   if (spinning.load())
     return; // Don't start if already spinning
   spinning.store(true);
@@ -22,7 +50,7 @@ void Spinner::start() {
 
     // We keep the message updated as we go, calculating its maximum length
     while (spinning.load()) {
-      maxMessageLength = std::max(maxMessageLength, message.size());
+      maxMessageLength = max(maxMessageLength, message.size());
 
       // Clear the line before printing the new spinner and message
       std::cout << "\r" << std::string(maxMessageLength + 3, ' ') << "\r"
@@ -39,6 +67,8 @@ void Spinner::start() {
     // Clear line when done
     std::cout << "\r" << std::string(maxMessageLength + 3, ' ') << "\r"
               << std::flush;
+
+    showCursor();
   });
 }
 
