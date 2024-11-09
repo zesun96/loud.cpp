@@ -22,9 +22,19 @@ target_link_libraries(main PRIVATE
 )
 
 # Copy sherpa lib/ and bin/
+file(GLOB SHARED_LIBS
+    "${sherpa_SOURCE_DIR}/lib/*.so"
+    "${sherpa_SOURCE_DIR}/lib/*.dylib"
+    "${sherpa_SOURCE_DIR}/lib/*.dll"
+
+    "${sherpa_SOURCE_DIR}/bin/*.so"
+    "${sherpa_SOURCE_DIR}/bin/*.dylib"
+    "${sherpa_SOURCE_DIR}/bin/*.dll"
+)
+
+# Add custom command to copy each library file individually
 add_custom_command(TARGET main POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${sherpa_SOURCE_DIR}/lib $<TARGET_FILE_DIR:main>
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${sherpa_SOURCE_DIR}/bin $<TARGET_FILE_DIR:main>
+    COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:main>
+    # Loop through each shared library and copy it to the target directory
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SHARED_LIBS} $<TARGET_FILE_DIR:main>
 )

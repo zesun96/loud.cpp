@@ -25,10 +25,12 @@ Run:
 */
 
 #include "main.h"
-
+#include "ffmpeg.h"
 #include "nlohmann/json_fwd.hpp"
 #include <CLI/CLI.hpp>
 #include <cstdint>
+#include <cstdlib>
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <nlohmann/json.hpp>
@@ -38,6 +40,8 @@ Run:
 #include <string>
 #include <vector>
 #include <whisper.h>
+
+namespace fs = std::filesystem;
 
 void save_json(const std::string &json_path,
                const nlohmann::ordered_json &result_json) {
@@ -156,9 +160,27 @@ int main(int argc, char *argv[]) {
     return app.exit(e);
   }
 
+  // Check file extension
+  fs::path audio_file_path(audio_file);
+  std::string ext = audio_file_path.extension().string();
+  if (ext != ".wav") {
+    std::cerr << "File type '" << ext
+              << "' not supported. please specify wav file" << std::endl;
+    utils::show_ffmpeg_normalize_suggestion(audio_file, argc, argv);
+    return EXIT_FAILURE;
+  }
+
   // Diarize
   auto *wave = read_wave(audio_file);
   CHECK_NULL(wave);
+  if (wave->sample_rate != 16000) {
+    std::cerr
+        << "Error: The audio file must have a sample rate of 16,000 Hz. Found "
+        << wave->sample_rate << " Hz." << std::endl;
+    utils::show_ffmpeg_normalize_suggestion(audio_file, argc, argv);
+    return EXIT_FAILURE;
+  }
+
   auto *sd = create_sd(segmentation_model_path, embedding_model_path,
                        num_speakers, provider);
   CHECK_NULL(sd);
@@ -209,8 +231,8 @@ int main(int argc, char *argv[]) {
       segment_data.resize(16000 * 30, 0.0f);
     }
     // Process the buffered (padded) segment with Whisper
-    if (whisper_full(ctx, wparams, segment_data.data(),
-                              segment_data.size()) != 0) {
+    if (whisper_full(ctx, wparams, segment_data.data(), segment_data.size()) !=
+        0) {
       std::cerr << argv[0] << ": Failed to process segment." << std::endl;
       return EXIT_FAILURE;
     }

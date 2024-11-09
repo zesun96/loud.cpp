@@ -49,4 +49,5 @@ Build with ninja backend
 
 ```console
 cmake -G Ninja -B build . -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release
 ```

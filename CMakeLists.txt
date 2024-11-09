@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(main)
 
+set(CMAKE_CXX_STANDARD 17)
+
 # Avoid warning about DOWNLOAD_EXTRACT_TIMESTAMP in CMake 3.24:
 if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
     cmake_policy(SET CMP0135 NEW)
@@ -10,7 +12,8 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Prepare executable
-add_executable(main src/main.cpp)
+add_executable(main src/main.cpp src/ffmpeg.cpp)
+target_include_directories(main PRIVATE "${CMAKE_SOURCE_DIR}/include")
 set_target_properties(main PROPERTIES OUTPUT_NAME "loud")
 set_target_properties(main PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
@@ -33,5 +36,3 @@ include(CMake/Cli11.cmake)
 include(CMake/Json.cmake)
 include(CMake/Sherpa.cmake)
 include(CMake/Whisper.cmake)
-
-
