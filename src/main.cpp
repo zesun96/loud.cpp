@@ -62,12 +62,12 @@ void print_segment(const SherpaOnnxOfflineSpeakerDiarizationSegment &segment,
             << std::flush;
 }
 
-whisper_full_params create_whisper_params() {
+whisper_full_params create_whisper_params(std::string language) {
   whisper_full_params wparams =
       whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
   // https://github.com/ggerganov/whisper.cpp/blob/master/examples/talk/talk.cpp
   wparams.new_segment_callback = NULL;
-  wparams.language = "en";
+  wparams.language = language.c_str();
   wparams.print_realtime = false;
   wparams.debug_mode = false;
   wparams.no_timestamps = true;
@@ -138,12 +138,15 @@ int main(int argc, char *argv[]) {
   std::string segmentation_model_path =
       "sherpa-onnx-pyannote-segmentation-3-0.onnx";
   std::string embedding_model_path = "nemo_en_titanet_small.onnx";
+  std::string language = "en";
   int32_t num_speakers = 4;
   std::string provider = get_default_provider();
   bool debug = false;
 
   app.add_option("model", model_path, "Path to the model")->required();
   app.add_option("audio", audio_file, "Path to the audio file")->required();
+  app.add_option("--language", language,
+                 "Language to transcribe with (Default: en)");
   app.add_option("--json", json_path, "Path to save the JSON output");
   app.add_option("--segmentation-model", segmentation_model_path,
                  "Path to the segmentation model");
@@ -201,7 +204,7 @@ int main(int argc, char *argv[]) {
   auto cparams = whisper_context_default_params();
   auto *ctx = whisper_init_from_file_with_params(model_path.c_str(), cparams);
   CHECK_NULL(ctx);
-  auto wparams = create_whisper_params();
+  auto wparams = create_whisper_params(language);
 
   nlohmann::ordered_json result_json;
   // Iterate diarize segments
