@@ -10,6 +10,7 @@ Windows
 winget install -e --id GnuWin32.Tar
 winget install -e --id JernejSimoncic.Wget
 winget install -e --id Kitware.CMake
+winget install --id=Ninja-build.Ninja  -e
 ```
 
 Build
@@ -40,4 +41,12 @@ OpenMP not found on macOS
 ```console
 brew install libomp
 export OpenMP_ROOT=$(brew --prefix)/opt/libomp
+```
+
+Windows doesn't produce `compile_commands.json` for clangd
+
+Build with ninja backend
+
+```console
+cmake -G Ninja -B build . -DCMAKE_BUILD_TYPE=Release
 ```
