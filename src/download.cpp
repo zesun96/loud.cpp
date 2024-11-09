@@ -5,6 +5,8 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
+#include <string>
 
 Spinner spinner("");
 std::string current_file = "";
