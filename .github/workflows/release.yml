@@ -21,10 +21,10 @@ jobs:
 
           - platform: "ubuntu-22.04" # Linux x86-64
             cmake-args: "-DFFMPEG_DOWNLOAD=ON"
-            archive: loud-linux.tar.gz
+            archive: loud-linux-x86-64.tar.gz
           - platform: "windows-latest" # Windows x86_64
             cmake-args: "-DGGML_VULKAN=ON -DFFMPEG_DOWNLOAD=ON"
-            archive: loud-windows.zip
+            archive: loud-windows-x86-64.zip
     runs-on: ${{ matrix.platform }}
 
     steps:
@@ -34,16 +34,22 @@ jobs:
           # Used for getting git tag
           fetch-depth: 0
 
-      - name: Prepare ninja
+      - name: Prepare ninja (Unix)
         run: |
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            winget install --id=Ninja-build.Ninja -e
-          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
             brew install ninja
           elif [[ "$RUNNER_OS" == "Linux" ]]; then
             sudo apt-get update
             sudo apt install ninja-build
           fi
+        if: (!contains(matrix.platform, 'windows'))
+
+      - name: Prepare ninja (Windows)
+        run: |
+          C:\msys64\usr\bin\wget https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-win.zip
+          7z x ninja-win.zip
+          echo "$PWD" >> $env:GITHUB_PATH
+        if: contains(matrix.platform, 'windows')
 
       - name: Prepare Vulkan SDK (Linux)
         run: |
@@ -79,8 +85,8 @@ jobs:
 
       - name: Upload package (Windows)
         run: |
-          Move-Item build/bin build/loud
-          7z a build\${{ matrix.archive }} build\loud
+          Move-Item build/bin loud
+          7z a build\${{ matrix.archive }} loud
           gh release upload $(git describe --tags --abbrev=0) build/${{ matrix.archive }} --clobber
         env:
           GH_TOKEN: ${{ github.token }}
