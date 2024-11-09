@@ -100,11 +100,13 @@ std::string get_default_provider() {
 const SherpaOnnxOfflineSpeakerDiarization *
 create_sd(const std::string &segmentation_model_path,
           const std::string &embedding_model_path, int32_t num_clusters,
-          std::string provider) {
+          std::string provider, int32_t onnx_num_threads) {
   SherpaOnnxOfflineSpeakerDiarizationConfig config;
   memset(&config, 0, sizeof(config));
   config.segmentation.provider = provider.c_str();
   config.embedding.provider = provider.c_str();
+  config.embedding.num_threads = onnx_num_threads;
+  config.segmentation.num_threads = onnx_num_threads;
   config.segmentation.pyannote.model = segmentation_model_path.c_str();
   config.embedding.model = embedding_model_path.c_str();
   config.clustering.num_clusters = num_clusters;
@@ -140,7 +142,8 @@ int main(int argc, char *argv[]) {
   std::string embedding_model_path = "nemo_en_titanet_small.onnx";
   std::string language = "en";
   int32_t num_speakers = 4;
-  std::string provider = get_default_provider();
+  int32_t onnx_num_threads = 4;
+  std::string onnx_provider = get_default_provider();
   bool debug = false;
 
   app.add_option("model", model_path, "Path to the model")->required();
@@ -154,7 +157,9 @@ int main(int argc, char *argv[]) {
                  "Path to the embedding model");
   app.add_option("--num-speakers", num_speakers,
                  "Number of speakers in the file");
-  app.add_option("--provider", provider, "Onnx execution provider");
+  app.add_option("--onnx-provider", onnx_provider, "Onnx execution provider");
+  app.add_option("--onnx-num-threads", onnx_num_threads,
+                 "Onnx number of threads (Default: 4)");
   app.add_flag("--debug", debug, "Enable debug output");
 
   try {
@@ -185,7 +190,7 @@ int main(int argc, char *argv[]) {
   }
 
   auto *sd = create_sd(segmentation_model_path, embedding_model_path,
-                       num_speakers, provider);
+                       num_speakers, onnx_provider, onnx_num_threads);
   CHECK_NULL(sd);
 
   auto *result = SherpaOnnxOfflineSpeakerDiarizationProcessWithCallback(
@@ -208,55 +213,104 @@ int main(int argc, char *argv[]) {
 
   nlohmann::ordered_json result_json;
   // Iterate diarize segments
+
   for (int32_t i = 0; i != num_segments; ++i) {
 
     // Calculate start and end samples for the segment
     int32_t start_sample = static_cast<int32_t>(segments[i].start * 16000);
     int32_t end_sample = static_cast<int32_t>(segments[i].end * 16000);
 
-    // skip segments that are less than 1s
-    if ((end_sample - start_sample) < 16000) {
+    // skip segments that are less than 0.5s
+    if ((end_sample - start_sample) < 16000 / 2) {
       continue;
     }
 
     // Ensure start and end are within bounds
-    if (start_sample < 0)
+    if (start_sample < 0) {
       start_sample = 0;
-    if (end_sample > wave->num_samples)
+    }
+    if (end_sample > wave->num_samples) {
       end_sample = wave->num_samples;
-
-    // Prepare buffer for the segment
-    std::vector<float> segment_data(wave->samples + start_sample,
-                                    wave->samples + end_sample);
-
-    // Fill with zeros up to 10 seconds
-    if (segment_data.size() < 16000 * 30) {
-      segment_data.resize(16000 * 30, 0.0f);
-    }
-    // Process the buffered (padded) segment with Whisper
-    if (whisper_full(ctx, wparams, segment_data.data(), segment_data.size()) !=
-        0) {
-      std::cerr << argv[0] << ": Failed to process segment." << std::endl;
-      return EXIT_FAILURE;
     }
 
-    // Get and print segment transcription
-    const int n_segments = whisper_full_n_segments(ctx);
+    int32_t segment_length = end_sample - start_sample;
+    int32_t chunk_size = 16000 * 30; // 30 seconds in samples
 
-    std::ostringstream text;
+    // Process longer segments in chunks (no more than 30 seconds each)
+    if (segment_length > chunk_size) {
+      for (int32_t chunk_start = start_sample; chunk_start < end_sample;
+           chunk_start += chunk_size) {
+        int32_t chunk_end = std::min(chunk_start + chunk_size, end_sample);
 
-    for (int j = 0; j < n_segments; j++) {
-      const char *segment_text = whisper_full_get_segment_text(ctx, j);
-      text << segment_text << " ";
+        // Prepare buffer for the chunk
+        std::vector<float> chunk_data(wave->samples + chunk_start,
+                                      wave->samples + chunk_end);
+
+        // Fill with zeros up to 30 seconds if the chunk is smaller than 30
+        // seconds
+        if (chunk_data.size() < chunk_size) {
+          chunk_data.resize(chunk_size, 0.0f);
+        }
+
+        // Process the chunk with Whisper
+        if (whisper_full(ctx, wparams, chunk_data.data(), chunk_data.size()) !=
+            0) {
+          std::cerr << argv[0] << ": Failed to process chunk." << std::endl;
+          return EXIT_FAILURE;
+        }
+
+        // Get and print chunk transcription
+        const int n_segments = whisper_full_n_segments(ctx);
+        std::ostringstream text;
+
+        for (int j = 0; j < n_segments; j++) {
+          const char *segment_text = whisper_full_get_segment_text(ctx, j);
+          text << segment_text << " ";
+        }
+
+        if (!json_path.empty()) {
+          result_json.push_back({{"text", text.str()},
+                                 {"start", segments[i].start},
+                                 {"end", segments[i].end},
+                                 {"speaker", segments[i].speaker}});
+        }
+        print_segment(segments[i], text.str());
+      }
+    } else {
+      // Process the segment if it's <= 30 seconds
+      std::vector<float> segment_data(wave->samples + start_sample,
+                                      wave->samples + end_sample);
+
+      // Fill with zeros up to 30 seconds if the segment is smaller than 30
+      // seconds
+      if (segment_data.size() < chunk_size) {
+        segment_data.resize(chunk_size, 0.0f);
+      }
+
+      // Process the buffered (padded) segment with Whisper
+      if (whisper_full(ctx, wparams, segment_data.data(),
+                       segment_data.size()) != 0) {
+        std::cerr << argv[0] << ": Failed to process segment." << std::endl;
+        return EXIT_FAILURE;
+      }
+
+      // Get and print segment transcription
+      const int n_segments = whisper_full_n_segments(ctx);
+      std::ostringstream text;
+
+      for (int j = 0; j < n_segments; j++) {
+        const char *segment_text = whisper_full_get_segment_text(ctx, j);
+        text << segment_text << " ";
+      }
+
+      if (!json_path.empty()) {
+        result_json.push_back({{"text", text.str()},
+                               {"start", segments[i].start},
+                               {"end", segments[i].end},
+                               {"speaker", segments[i].speaker}});
+      }
+      print_segment(segments[i], text.str());
     }
-
-    if (!json_path.empty()) {
-      result_json.push_back({{"text", text.str()},
-                             {"start", segments[i].start},
-                             {"end", segments[i].end},
-                             {"speaker", segments[i].speaker}});
-    }
-    print_segment(segments[i], text.str());
   }
 
   // Write JSON file
