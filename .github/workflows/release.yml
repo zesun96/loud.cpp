@@ -1,0 +1,37 @@
+name: macOS Build and Upload Artifact
+
+on:
+  workflow_dispatch: null
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install LLVM and Clang
+        uses: KyleMayes/install-llvm-action@v2
+        with:
+          version: "10.0"
+
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v2
+      - uses: seanmiddleditch/gha-setup-ninja@master
+
+      - name: Build with CMake and Ninja
+        run: |
+          cmake -G Ninja -B build .
+          cmake --build build --config Release
+
+      - name: Rename output and package
+        run: |
+          mv build/bin build/loud
+          tar -czf build/loud.tar.gz -C build loud
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: loud-artifact
+          path: build/loud.tar.gz
