@@ -11,10 +11,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: "macos-latest" # for Arm based macs (M1 and above).
+          - platform: "macos-latest" # macOS arm64
             cmake-args: "-DFFMPEG_DOWNLOAD=ON"
-            archive: loud-darwin.tar.gz
-          - platform: "ubuntu-22.04" # Ubuntu 22.04 x86_64 (Works on 24.04 as well)
+            archive: loud-darwin-arm64.tar.gz
+
+          - platform: "macos-latest" # macOS x86-64
+            cmake-args: '-DFFMPEG_DOWNLOAD=ON -DCMAKE_OSX_ARCHITECTURES="x86_64" -DCMAKE_SYSTEM_NAME=Darwin"'
+            archive: loud-darwin-x86-64.tar.gz
+
+          - platform: "ubuntu-22.04" # Linux x86-64
             cmake-args: "-DFFMPEG_DOWNLOAD=ON"
             archive: loud-linux.tar.gz
           - platform: "windows-latest" # Windows x86_64
@@ -26,18 +31,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
+          # Used for getting git tag
           fetch-depth: 0
 
-      - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v2
-      - uses: seanmiddleditch/gha-setup-ninja@master
-
       - name: Prepare Vulkan SDK (Linux)
-        uses: humbletim/setup-vulkan-sdk@v1.2.0
-        with:
-          vulkan-query-version: 1.3.239.0
-          vulkan-use-cache: true
-          vulkan-components: Vulkan-Headers, Vulkan-Loader
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libvulkan1
         if: contains(matrix.platform, 'ubuntu')
 
       - name: Prepare Vulkan SDK (Windows)
@@ -50,31 +50,27 @@ jobs:
 
       - name: Build with CMake and Ninja
         run: |
-          cmake -G Ninja -B build . -DVERSION="$(git rev-parse --short HEAD)" ${{ matrix.cmake-args }}
+          cmake -G Ninja -B build . -DCMAKE_BUILD_TYPE=Release -DVERSION="$(git rev-parse --short HEAD)" ${{ matrix.cmake-args }}
           cmake --build build --config Release
 
-      - name: Rename output and package (Unix)
+      - name: Upload package (Unix)
         run: |
+          if [[ "$(uname)" == "Darwin" ]]; then
+            codesign --force -s - ./build/bin/*
+          fi
+          chmod +x ./build/bin/*
           mv build/bin build/loud
           tar -czf build/${{ matrix.archive }} -C build loud
+          gh release upload `git describe --tags --abbrev=0` build/${{ matrix.archive }} --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
         if: (!contains(matrix.platform, 'windows'))
 
-      - name: Rename output and package (Windows)
+      - name: Upload package (Windows)
         run: |
           Move-Item build/bin build/loud
           7z a build\${{ matrix.archive }} build\loud
-        if: contains(matrix.platform, 'windows')
-
-      - name: Upload release (Windows)
-        run: |
           gh release upload $(git describe --tags --abbrev=0) build/${{ matrix.archive }} --clobber
         env:
           GH_TOKEN: ${{ github.token }}
         if: contains(matrix.platform, 'windows')
-
-      - name: Upload release (Unix)
-        run: |
-          gh release upload `git describe --tags --abbrev=0` build/${{ matrix.archive }} --clobber
-        env:
-          GH_TOKEN: ${{ github.token }}
-        if: (!contains(matrix.platform , 'windows'))
