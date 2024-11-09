@@ -17,6 +17,8 @@ void hideCursor() {
   GetConsoleCursorInfo(consoleHandle, &cursorInfo);
   cursorInfo.bVisible = FALSE; // Set visibility to FALSE
   SetConsoleCursorInfo(consoleHandle, &cursorInfo);
+#else
+  std::cout << "\033[?25l"; // ANSI escape code to hide cursor
 #endif
 }
 
@@ -28,6 +30,8 @@ void showCursor() {
   GetConsoleCursorInfo(consoleHandle, &cursorInfo);
   cursorInfo.bVisible = TRUE; // Set visibility to TRUE
   SetConsoleCursorInfo(consoleHandle, &cursorInfo);
+#else
+  std::cout << "\033[?25h"; // ANSI escape code to show cursor
 #endif
 }
 
@@ -36,7 +40,9 @@ Spinner::Spinner(const std::string &initialMessage)
 
 void Spinner::start() {
   hideCursor();
+#ifdef _WIN32
   SetConsoleOutputCP(65001);
+#endif
   if (spinning.load())
     return; // Don't start if already spinning
   spinning.store(true);
@@ -50,7 +56,11 @@ void Spinner::start() {
 
     // We keep the message updated as we go, calculating its maximum length
     while (spinning.load()) {
+#ifdef _WIN32
       maxMessageLength = max(maxMessageLength, message.size());
+#else
+      maxMessageLength = std::max(maxMessageLength, message.size());
+#endif
 
       // Clear the line before printing the new spinner and message
       std::cout << "\r" << std::string(maxMessageLength + 3, ' ') << "\r"
