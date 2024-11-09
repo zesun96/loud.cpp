@@ -25,16 +25,14 @@ Run:
 */
 
 #include "main.h"
+#include "config.h"
+#include "download.h"
 #include "ffmpeg.h"
 #include "nlohmann/json_fwd.hpp"
 #include "spinner.h"
-#include "subprocess/ProcessBuilder.hpp"
-#include "subprocess/basic_types.hpp"
-#include "subprocess/pipe.hpp"
 #include <CLI/CLI.hpp>
 #include <cstdint>
 #include <cstdlib>
-#include <exception>
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
@@ -77,7 +75,7 @@ void save_json(const std::string &json_path,
 
 void print_segment(const SherpaOnnxOfflineSpeakerDiarizationSegment &segment,
                    const std::string &text) {
-  std::cout << std::fixed << std::setprecision(3)
+  std::cout << std::fixed << std::setprecision(0)
             << format_timestamp(segment.start) << " -- "
             << format_timestamp(segment.end) << " speaker_" << std::setw(2)
             << std::setfill('0') << segment.speaker << ": " << text << std::endl
@@ -117,6 +115,18 @@ std::string get_default_provider() {
   return "coreml";
 #endif
   return "cpu";
+}
+
+std::string get_argv_line(int argc, char *argv[]) {
+  std::ostringstream line;
+  for (int i = 0; i < argc; i++) {
+    if (i == 0) {
+      line << ffmpeg::get_relative_path(argv[0]) << " ";
+    } else {
+      line << argv[i] << " ";
+    }
+  }
+  return line.str();
 }
 
 const SherpaOnnxOfflineSpeakerDiarization *
@@ -165,23 +175,26 @@ int main(int argc, char *argv[]) {
 
   CLI::App app{"Loud.cpp\nSpeech to text with ONNX and Whisper\n"};
 
-  std::string model_path;
+  std::string whisper_model_path = config::ggml_tiny_name;
   std::string audio_file;
   std::string json_path;
-  std::string segmentation_model_path =
-      "sherpa-onnx-pyannote-segmentation-3-0.onnx";
-  std::string embedding_model_path = "nemo_en_titanet_small.onnx";
+  std::string segmentation_model_path = config::segmentation_name;
+  std::string embedding_model_path = config::embedding_name;
   std::string language = "en";
   int32_t num_speakers = 4;
   int32_t onnx_num_threads = 4;
   std::string onnx_provider = get_default_provider();
   bool debug = false;
+  bool download_models = false;
 
-  app.add_option("model", model_path, "Path to the model")->required();
   app.add_option("audio", audio_file, "Path to the audio file")->required();
   app.add_option("--language", language,
                  "Language to transcribe with (Default: en)");
+  app.add_flag(
+      "--download-models", download_models,
+      "Download models (pyannote segment, whisper tiny, nemo small en)");
   app.add_option("--json", json_path, "Path to save the JSON output");
+  app.add_option("--whisper-model", whisper_model_path, "Path to the model");
   app.add_option("--segmentation-model", segmentation_model_path,
                  "Path to the segmentation model");
   app.add_option("--embedding-model", embedding_model_path,
@@ -199,20 +212,50 @@ int main(int argc, char *argv[]) {
     return app.exit(e);
   }
 
+  if (download_models) {
+    if (!fs::exists(config::segmentation_name)) {
+      download_file(config::segmentation_url, config::segmentation_name);
+    }
+    if (!fs::exists(config::embedding_name)) {
+      download_file(config::embedding_url, config::embedding_name);
+    }
+    if (!fs::exists(config::ggml_tiny_name)) {
+      download_file(config::ggml_tiny_url, config::ggml_tiny_name);
+    }
+  }
+
+  if (!fs::exists(embedding_model_path)) {
+    std::cout << "Embedding model not found at " << embedding_model_path
+              << std::endl
+              << std::endl
+              << "Please execute the following command to download models "
+                 "automatically:"
+              << std::endl
+              << get_argv_line(argc, argv) << " --download-models" << std::endl;
+    return EXIT_FAILURE;
+  }
+
   // Check file extension
-  fs::path audio_file_path(audio_file);
-  std::string ext = audio_file_path.extension().string();
+  if (!fs::exists(audio_file)) {
+    std::cerr << "audio file " << audio_file << " not exists!";
+    return EXIT_FAILURE;
+  }
+
+  if (!fs::exists(whisper_model_path)) {
+    std::cerr << "whisper model " << whisper_model_path << " not exists!";
+    return EXIT_FAILURE;
+  }
 
   // Diarize
   auto wave = read_wave(audio_file);
   if (wave == nullptr) {
-    if (utils::is_ffmpeg_installed()) {
-      auto random_path = utils::get_random_path(".wav");
+    if (ffmpeg::is_ffmpeg_installed()) {
+      auto random_path = ffmpeg::get_random_path(".wav");
       std::cout << "normalize audio..." << std::endl;
-      utils::normalize_audio(audio_file, random_path);
+      ffmpeg::normalize_audio(audio_file, random_path);
       wave = read_wave(random_path);
     } else {
-      utils::show_ffmpeg_normalize_suggestion(audio_file, argc, argv);
+      ffmpeg::show_ffmpeg_normalize_suggestion(audio_file, argc, argv);
       return EXIT_FAILURE;
     }
   }
@@ -222,7 +265,7 @@ int main(int argc, char *argv[]) {
     std::cerr << "Error: The audio file must have a sample rate of 16,000 "
                  "Hz. Found "
               << wave->sample_rate << " Hz." << std::endl;
-    utils::show_ffmpeg_normalize_suggestion(audio_file, argc, argv);
+    ffmpeg::show_ffmpeg_normalize_suggestion(audio_file, argc, argv);
     return EXIT_FAILURE;
   }
 
@@ -247,7 +290,8 @@ int main(int argc, char *argv[]) {
     whisper_log_set(cb_log_disable, NULL);
   }
   auto cparams = whisper_context_default_params();
-  auto *ctx = whisper_init_from_file_with_params(model_path.c_str(), cparams);
+  auto *ctx =
+      whisper_init_from_file_with_params(whisper_model_path.c_str(), cparams);
   CHECK_NULL(ctx);
   auto wparams = create_whisper_params(language);
 
