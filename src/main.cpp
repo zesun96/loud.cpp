@@ -43,6 +43,21 @@ Run:
 
 namespace fs = std::filesystem;
 
+std::string format_timestamp(double seconds) {
+  int total_seconds = static_cast<int>(seconds);
+  int hours = total_seconds / 3600;
+  int minutes = (total_seconds % 3600) / 60;
+  int secs = total_seconds % 60;
+
+  std::ostringstream oss;
+  if (hours > 0) {
+    oss << std::setw(2) << std::setfill('0') << hours << ":";
+  }
+  oss << std::setw(2) << std::setfill('0') << minutes << ":" << std::setw(2)
+      << std::setfill('0') << secs;
+  return oss.str();
+}
+
 void save_json(const std::string &json_path,
                const nlohmann::ordered_json &result_json) {
   std::ofstream json_output(json_path);
@@ -56,9 +71,10 @@ void save_json(const std::string &json_path,
 
 void print_segment(const SherpaOnnxOfflineSpeakerDiarizationSegment &segment,
                    const std::string &text) {
-  std::cout << std::fixed << std::setprecision(3) << segment.start << " -- "
-            << segment.end << " speaker_" << std::setw(2) << std::setfill('0')
-            << segment.speaker << ": " << text << std::endl
+  std::cout << std::fixed << std::setprecision(3)
+            << format_timestamp(segment.start) << " -- "
+            << format_timestamp(segment.end) << " speaker_" << std::setw(2)
+            << std::setfill('0') << segment.speaker << ": " << text << std::endl
             << std::flush;
 }
 
