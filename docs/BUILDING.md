@@ -16,7 +16,7 @@ winget install --id=Ninja-build.Ninja  -e
 Build
 
 ```console
-cmake -B build .
+cmake -G Ninja -B build .
 cmake --build build --target main
 ./build/bin/loud
 ```
@@ -24,7 +24,7 @@ cmake --build build --target main
 Build release
 
 ```console
-cmake -B build -DCMAKE_BUILD_TYPE=Release .
+cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release .
 cmake --build build --config Release --target main
 ```
 
@@ -37,7 +37,7 @@ Run
 Download and set up FFmpeg during compile automatically:
 
 ```console
-cmake -B build . -DCMAKE_BUILD_TYPE=Release -DFFMPEG_DOWNLOAD=ON
+cmake -G Ninja -B build . -DCMAKE_BUILD_TYPE=Release -DFFMPEG_DOWNLOAD=ON
 ```
 
 Build with vulkan sdk on Windows
@@ -50,7 +50,7 @@ sudo apt-get install -y libvulkan1 mesa-vulkan-drivers
 
 ```console
 $env:VULKAN_SDK = "C:\VulkanSDK\1.3.296.0"
-cmake -B build . -DCMAKE_BUILD_TYPE=Release -DGGML_VULKAN=ON
+cmake -G Ninja -B build . -DCMAKE_BUILD_TYPE=Release -DGGML_VULKAN=ON
 ```
 
 ## Gotchas

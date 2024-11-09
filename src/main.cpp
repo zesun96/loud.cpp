@@ -17,7 +17,7 @@ wget https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-recongition
 wget https://github.com/thewh1teagle/vibe/raw/refs/heads/main/samples/single.wav
 
 Build:
-cmake -B build .
+cmake -G Ninja -B build .
 cmake --build build
 
 Run:
@@ -136,7 +136,6 @@ create_sd(const std::string &segmentation_model_path,
   return sd;
 }
 
-std::mutex spinnerMutex;
 int32_t diarization_progress_callback(int32_t num_processed_chunk,
                                       int32_t num_total_chunks, void *arg) {
 
@@ -145,19 +144,13 @@ int32_t diarization_progress_callback(int32_t num_processed_chunk,
   float progress =
       (static_cast<float>(num_processed_chunk) / num_total_chunks) * 100.0f;
 
-  {
-    std::lock_guard<std::mutex> lock(
-        spinnerMutex); // Lock mutex for thread safety
+  spinner->updateMessage("Diarization... " +
+                         std::to_string(static_cast<int>(progress)) + "%");
 
-    // Update spinner message with progress
-    spinner->updateMessage("Diarization... " +
-                           std::to_string(static_cast<int>(progress)) + "%");
-
-    // Stop the spinner if progress is complete
-    if (progress >= 100.0f) {
-      spinner->stop();
-      std::cout << "✓ Diarization complete!" << std::endl;
-    }
+  // Stop the spinner if progress is complete
+  if (progress >= 100.0f) {
+    spinner->stop();
+    std::cout << "✓ Diarization complete!" << std::endl;
   }
 
   return 0;
