@@ -39,6 +39,7 @@ Spinner::Spinner(const std::string &initialMessage)
     : message(initialMessage), spinning(false) {}
 
 void Spinner::start() {
+  std::cout << std::endl << std::flush;
   hideCursor();
 #ifdef _WIN32
   SetConsoleOutputCP(65001);
