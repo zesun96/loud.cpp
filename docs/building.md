@@ -51,6 +51,7 @@ sudo apt-get install -y libvulkan1 mesa-vulkan-drivers
 ```console
 $env:VULKAN_SDK = "C:\VulkanSDK\1.3.296.0"
 cmake -G Ninja -B build . -DCMAKE_BUILD_TYPE=Release -DGGML_VULKAN=ON
+cmake --build build --config Release
 ```
 
 ## Gotchas

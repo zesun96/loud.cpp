@@ -40,6 +40,7 @@ void download_file(std::string url, std::string path) {
   spinner.updateMessage(message.str());
   spinner.start();
   CURL *curl = curl_easy_init();
+  CURLcode res;
   if (curl) {
     std::ofstream ofs(path, std::ios::binary);
     // curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
@@ -51,9 +52,15 @@ void download_file(std::string url, std::string path) {
                      nullptr);                      // No extra data passed
     curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L); // Enable progress tracking
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_perform(curl);
+    res = curl_easy_perform(curl);
+
     curl_easy_cleanup(curl);
   }
   spinner.stop();
-  std::cout << "✓ Download " << path << " complete!" << std::endl;
+  if (res == CURLE_OK) {
+    std::cout << "✓ Download " << path << " complete!" << std::endl;
+  } else {
+    std::cerr << "✗ Download of " << path << " from " << url
+              << " failed: " << curl_easy_strerror(res) << std::endl;
+  }
 }

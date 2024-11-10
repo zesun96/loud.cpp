@@ -8,6 +8,9 @@ Whisper.cpp with diarization
 - Segment using pyannote-audio model
 - Transcribe using OpenAI whisper
 - Support macOS, Windows, Linux
+- Comes with FFMPEG
+- Support any audio or video format
+- Download models automatically with `--download-models`
 
 ## Install
 
