@@ -10,6 +10,11 @@ set(CURL_USE_LIBPSL OFF)
 set(CURL_USE_LIBSSH2 OFF)
 set(HTTP_ONLY ON)
 
+if(WIN32)
+    # Native https on Windows
+    set(CURL_USE_SCHANNEL ON)
+endif()
+
 # Supress warnings
 add_compile_options(-w)
 
