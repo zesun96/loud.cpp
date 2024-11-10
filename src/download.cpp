@@ -3,12 +3,14 @@
 #include "curl/curl.h"
 #include "curl/system.h"
 #include "spinner.h"
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <termcolor/termcolor.hpp>
+
 
 namespace fs = std::filesystem;
 
