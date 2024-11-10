@@ -11,6 +11,7 @@ Whisper.cpp with diarization
 - Comes with FFMPEG
 - Support any audio or video format
 - Download models automatically with `--download-models`
+- Colored output for easy identification of speakers
 
 ## Install
 
