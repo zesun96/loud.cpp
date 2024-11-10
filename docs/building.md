@@ -45,6 +45,8 @@ Build with vulkan sdk on Windows
 See https://vulkan.lunarg.com/sdk/home
 
 ```console
+sudo apt-get update
+sudo apt-get install libssl-dev cmake ninja-build build-essential
 sudo apt-get install -y libvulkan1 mesa-vulkan-drivers
 ```
 
