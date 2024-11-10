@@ -1,3 +1,4 @@
+#include "CLI/CLI.hpp"
 #include "config.h"
 #include "diarization.h"
 #include "download.h"
@@ -7,11 +8,13 @@
 #include "transcribe.h"
 #include "utils.h"
 #include <CLI/CLI.hpp>
+#include <iostream>
 #include <nlohmann/json.hpp>
+#include <termcolor/termcolor.hpp>
 #include <whisper.h>
 
-namespace fs = std::filesystem;
 using spinner::Spinner;
+using utils::contains;
 
 int main(int argc, char *argv[]) {
 
@@ -28,13 +31,22 @@ int main(int argc, char *argv[]) {
   std::string onnx_provider = diarization::get_default_provider();
   bool debug = false;
   bool download_models = false;
+  bool show_version = false;
 
-  app.add_option("audio", audio_file, "Path to the audio file")->required();
+  // Audio required conditionally
+  auto audio_flag =
+      app.add_option("audio", audio_file, "Path to the audio file")
+          ->check(CLI::ExistingFile);
+  if (!contains(argc, argv, "--version") && !contains(argc, argv, "-v")) {
+    audio_flag->required();
+  }
+
   app.add_option("--language", language,
                  "Language to transcribe with (Default: en)");
   app.add_flag(
       "--download-models", download_models,
       "Download models (pyannote segment, whisper tiny, nemo small en)");
+  app.add_flag("--version,-v", show_version, "Show loud.cpp version and exit");
   app.add_option("--json", json_path, "Path to save the JSON output");
   app.add_option("--whisper-model", whisper_model_path, "Path to the model");
   app.add_option("--segmentation-model", segmentation_model_path,
@@ -54,14 +66,17 @@ int main(int argc, char *argv[]) {
     return app.exit(e);
   }
 
+  if (show_version) {
+    std::cout << termcolor::green << "==== loud.cpp " << termcolor::blue
+              << VERSION << termcolor::green << " ====" << termcolor::reset
+              << std::endl
+              << termcolor::reset << std::endl;
+    return EXIT_SUCCESS;
+  }
+
   // Download models
   if (download_models) {
     download::download_models_if_needed();
-  }
-
-  if (!fs::exists(audio_file)) {
-    std::cerr << "audio file " << audio_file << " not exists!";
-    return EXIT_FAILURE;
   }
 
   // Check if models exists
@@ -94,11 +109,12 @@ int main(int argc, char *argv[]) {
       SherpaOnnxOfflineSpeakerDiarizationResultSortByStartTime(result);
 
   // Start transcribe
+  const auto params = transcribe::create_whisper_params(language, debug);
   const auto cparams = whisper_context_default_params();
   auto *ctx =
       whisper_init_from_file_with_params(whisper_model_path.c_str(), cparams);
   CHECK_NULL(ctx);
-  const auto params = transcribe::create_whisper_params(language, debug);
+
   auto json =
       segments::process_segments(segments, num_segments, wave, ctx, params);
 

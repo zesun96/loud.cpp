@@ -43,4 +43,5 @@ std::string get_argv_line(int argc, char *argv[]);
 void save_json(const std::string &json_path,
                const nlohmann::ordered_json &result_json);
 bool check_model_exists(const std::string &model_path, int argc, char *argv[]);
+bool contains(int argc, char *argv[], const std::string &arg);
 } // namespace utils

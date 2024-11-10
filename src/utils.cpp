@@ -95,4 +95,13 @@ bool check_model_exists(const std::string &model_path, int argc, char *argv[]) {
   return true;
 }
 
+bool contains(int argc, char *argv[], const std::string &arg) {
+  for (int i = 0; i < argc; ++i) {
+    if (arg == argv[i]) {
+      return true;
+    }
+  }
+  return false;
+}
+
 } // namespace utils
