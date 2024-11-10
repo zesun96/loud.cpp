@@ -12,7 +12,8 @@
 namespace ffmpeg {
 
 void normalize_audio(std::string input, std::string output) {
-  std::cout << "Normalizing audio from " << input << " to " << output;
+  std::cout << "Normalizing audio from " << input << " to " << output
+            << std::endl;
   using subprocess::CompletedProcess;
   using subprocess::PipeOption;
   using subprocess::RunBuilder;

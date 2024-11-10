@@ -130,7 +130,6 @@ const SherpaOnnxWave *prepare_audio_file(const std::string &audio_file,
   if (wave == nullptr) {
     if (utils::is_program_installed("ffmpeg")) {
       auto random_path = utils::get_random_path(".wav");
-      std::cout << "normalize audio..." << std::endl;
       ffmpeg::normalize_audio(audio_file, random_path);
       wave = diarization::read_wave(random_path);
     } else {
