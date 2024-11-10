@@ -42,4 +42,5 @@ bool is_program_installed(std::string name);
 std::string get_argv_line(int argc, char *argv[]);
 void save_json(const std::string &json_path,
                const nlohmann::ordered_json &result_json);
+bool check_model_exists(const std::string &model_path, int argc, char *argv[]);
 } // namespace utils

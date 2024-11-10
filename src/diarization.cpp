@@ -1,5 +1,8 @@
 
 #include "diarization.h"
+#include "ffmpeg.h"
+#include "sherpa-onnx/c-api/c-api.h"
+#include "spinner.h"
 #include "utils.h"
 #include <iomanip>
 #include <iostream>
@@ -18,7 +21,7 @@ namespace diarization {
 
 // Predefined set of colors to cycle through (represented as termcolor
 // constants)
-const std::vector<std::ostream &(*)(std::ostream &)> colors = {
+static const std::vector<std::ostream &(*)(std::ostream &)> colors = {
     termcolor::green,   termcolor::yellow,   termcolor::blue,
     termcolor::magenta, termcolor::cyan,     termcolor::bright_yellow,
     termcolor::white,   termcolor::grey,     termcolor::bright_blue,
@@ -119,6 +122,45 @@ const SherpaOnnxWave *read_wave(const std::string &path) {
     return nullptr;
   }
   return wave;
+}
+
+const SherpaOnnxWave *prepare_audio_file(const std::string &audio_file,
+                                         int argc, char *argv[]) {
+  auto wave = diarization::read_wave(audio_file);
+  if (wave == nullptr) {
+    if (utils::is_program_installed("ffmpeg")) {
+      auto random_path = utils::get_random_path(".wav");
+      std::cout << "normalize audio..." << std::endl;
+      ffmpeg::normalize_audio(audio_file, random_path);
+      wave = diarization::read_wave(random_path);
+    } else {
+      ffmpeg::show_ffmpeg_normalize_suggestion(audio_file, argc, argv);
+      return nullptr;
+    }
+  }
+
+  if (wave->sample_rate != 16000) {
+    std::cerr
+        << "Error: The audio file must have a sample rate of 16,000 Hz. Found "
+        << wave->sample_rate << " Hz." << std::endl;
+    ffmpeg::show_ffmpeg_normalize_suggestion(audio_file, argc, argv);
+    return nullptr;
+  }
+
+  return wave;
+}
+
+const SherpaOnnxOfflineSpeakerDiarizationResult *
+run_diarization(const SherpaOnnxOfflineSpeakerDiarization *sd,
+                const SherpaOnnxWave *wave, Spinner &spinner) {
+  return SherpaOnnxOfflineSpeakerDiarizationProcessWithCallback(
+      sd, wave->samples, wave->num_samples,
+      [](int32_t num_processed_chunk, int32_t num_total_chunks,
+         void *arg) -> int32_t {
+        return diarization::diarization_progress_callback(
+            num_processed_chunk, num_total_chunks, static_cast<Spinner *>(arg));
+      },
+      &spinner);
 }
 
 } // namespace diarization

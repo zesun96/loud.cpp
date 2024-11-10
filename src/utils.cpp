@@ -81,4 +81,18 @@ void save_json(const std::string &json_path,
   }
 }
 
+bool check_model_exists(const std::string &model_path, int argc, char *argv[]) {
+  if (!fs::exists(model_path)) {
+    std::cout << "Model " << " not found at " << model_path << std::endl
+              << std::endl
+              << "Please execute the following command to download models "
+                 "automatically:"
+              << std::endl
+              << utils::get_argv_line(argc, argv) << " --download-models"
+              << std::endl;
+    return false;
+  }
+  return true;
+}
+
 } // namespace utils

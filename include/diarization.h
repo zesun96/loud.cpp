@@ -18,4 +18,9 @@ int32_t diarization_progress_callback(int32_t num_processed_chunk,
 void print_segment(const SherpaOnnxOfflineSpeakerDiarizationSegment &segment,
                    const std::string &text);
 std::string get_default_provider();
+const SherpaOnnxWave *prepare_audio_file(const std::string &audio_file,
+                                         int argc, char *argv[]);
+const SherpaOnnxOfflineSpeakerDiarizationResult *
+run_diarization(const SherpaOnnxOfflineSpeakerDiarization *sd,
+                const SherpaOnnxWave *wave, Spinner &spinner);
 } // namespace diarization

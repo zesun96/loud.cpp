@@ -18,7 +18,7 @@
 
 namespace spinner {
 
-void hideCursor() {
+static void hideCursor() {
 #ifdef _WIN32
   // Windows-specific code to hide cursor
   HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -31,7 +31,7 @@ void hideCursor() {
 #endif
 }
 
-void showCursor() {
+static void showCursor() {
 #ifdef _WIN32
   // Windows-specific code to show cursor
   HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -45,7 +45,7 @@ void showCursor() {
 }
 
 #ifndef _WIN32
-void signalHandler(int signum) {
+static void signalHandler(int signum) {
   showCursor();
   std::exit(signum);
 }

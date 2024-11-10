@@ -1,4 +1,5 @@
 #include "download.h"
+#include "config.h"
 #include "curl/curl.h"
 #include "curl/system.h"
 #include "spinner.h"
@@ -9,6 +10,8 @@
 #include <string>
 #include <termcolor/termcolor.hpp>
 
+namespace fs = std::filesystem;
+
 namespace download {
 
 struct DownloadContext {
@@ -16,8 +19,8 @@ struct DownloadContext {
   std::string file_name;
 };
 
-size_t write_callback(char *contents, size_t size, size_t nmemb,
-                      std::ofstream *userp) {
+static size_t write_callback(char *contents, size_t size, size_t nmemb,
+                             std::ofstream *userp) {
   userp->write(contents, size * nmemb);
   return size * nmemb;
 }
@@ -76,4 +79,16 @@ void download_file(const std::string url, const std::string path) {
               << " failed: " << curl_easy_strerror(res) << std::endl;
   }
 }
+void download_models_if_needed() {
+  if (!fs::exists(config::segmentation_name)) {
+    download_file(config::segmentation_url, config::segmentation_name);
+  }
+  if (!fs::exists(config::embedding_name)) {
+    download_file(config::embedding_url, config::embedding_name);
+  }
+  if (!fs::exists(config::ggml_tiny_name)) {
+    download_file(config::ggml_tiny_url, config::ggml_tiny_name);
+  }
+}
+
 } // namespace download
