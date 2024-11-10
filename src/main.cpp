@@ -42,6 +42,7 @@ Run:
 #include <stdio.h>
 #include <string>
 #include <subprocess.hpp>
+#include <termcolor/termcolor.hpp>
 #include <vector>
 #include <whisper.h>
 
@@ -73,13 +74,36 @@ void save_json(const std::string &json_path,
   }
 }
 
+// Predefined set of colors to cycle through (represented as termcolor
+// constants)
+const std::vector<std::ostream &(*)(std::ostream &)> colors = {
+    termcolor::green,   termcolor::yellow,   termcolor::blue,
+    termcolor::magenta, termcolor::cyan,     termcolor::bright_yellow,
+    termcolor::white,   termcolor::grey,     termcolor::bright_blue,
+    termcolor::bold,    termcolor::underline};
+
+// Map to store speaker ID -> color mapping
+std::map<int, std::ostream &(*)(std::ostream &)> speaker_colors;
+
 void print_segment(const SherpaOnnxOfflineSpeakerDiarizationSegment &segment,
                    const std::string &text) {
+  // Check if speaker has been assigned a color; if not, assign a color
+  if (speaker_colors.find(segment.speaker) == speaker_colors.end()) {
+    // Cycle through the colors based on the speaker ID
+    speaker_colors[segment.speaker] = colors[segment.speaker % colors.size()];
+  }
+
+  // Get the color for the current speaker
+  auto color = speaker_colors[segment.speaker];
+
+  // Print the segment with the appropriate color
   std::cout << std::fixed << std::setprecision(0)
             << format_timestamp(segment.start) << " -- "
-            << format_timestamp(segment.end) << " speaker_" << std::setw(2)
-            << std::setfill('0') << segment.speaker << ": " << text << std::endl
-            << std::flush;
+            << format_timestamp(segment.end) << " (" << std::setw(2)
+            << std::setfill('0') << segment.speaker << "): ";
+
+  // Apply the color to the text and print
+  std::cout << color << text << termcolor::reset << std::endl << std::flush;
 }
 
 whisper_full_params create_whisper_params(std::string language) {
@@ -171,7 +195,8 @@ int32_t diarization_progress_callback(int32_t num_processed_chunk,
   // Stop the spinner if progress is complete
   if (progress >= 100.0f) {
     spinner->stop();
-    std::cout << "✓ Diarization complete!" << std::endl;
+    std::cout << termcolor::green << "✓" << termcolor::reset
+              << " Diarization complete!" << std::endl;
   }
 
   return 0;
