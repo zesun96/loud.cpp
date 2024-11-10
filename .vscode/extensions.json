@@ -3,6 +3,7 @@
         "llvm-vs-code-extensions.vscode-clangd",
         "ms-vscode.cmake-tools",
         "ms-vscode.cpptools-extension-pack",
-        "vscode-icons-team.vscode-icons"
+        "vscode-icons-team.vscode-icons",
+        "github.vscode-github-actions"
     ]
 }
