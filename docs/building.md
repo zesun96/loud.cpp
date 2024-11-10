@@ -100,3 +100,10 @@ https://huggingface.co/spaces/pyannote/pretrained-pipelines
 ## Try more embedding models
 
 See [sherpa-onnx/releases/tag/speaker-recongition-models](https://github.com/k2-fsa/sherpa-onnx/releases/tag/speaker-recongition-models)
+
+## Faster build with clang on Windows
+
+```console
+$env:CC = "clang"
+$env:CXX = "clang++"
+```
