@@ -3,6 +3,8 @@
 #include <chrono>
 #include <iostream>
 
+#include <string>
+#include <termcolor/termcolor.hpp>
 #include <thread>
 #include <vector>
 
@@ -89,8 +91,8 @@ void Spinner::start() {
                 << std::flush;
 
       // Print the current spinner frame and message
-      std::cout << "\r" << spinnerFrames[frameIndex] << " " << message
-                << std::flush;
+      std::cout << "\r" << termcolor::green << spinnerFrames[frameIndex]
+                << termcolor::reset << " " << message << std::flush;
 
       frameIndex = (frameIndex + 1) % spinnerFrames.size();
       std::this_thread::sleep_for(

@@ -7,6 +7,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <termcolor/termcolor.hpp>
 
 Spinner spinner("");
 std::string current_file = "";
@@ -58,9 +59,11 @@ void download_file(std::string url, std::string path) {
   }
   spinner.stop();
   if (res == CURLE_OK) {
-    std::cout << "✓ Download " << path << " complete!" << std::endl;
+    std::cout << termcolor::green << "✓" << termcolor::reset << " Download "
+              << path << " complete!" << std::endl;
   } else {
-    std::cerr << "✗ Download of " << path << " from " << url
+    std::cerr << termcolor::red << "✗" << termcolor::reset << " Download of "
+              << path << " from " << url
               << " failed: " << curl_easy_strerror(res) << std::endl;
   }
 }
