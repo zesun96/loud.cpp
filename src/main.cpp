@@ -182,9 +182,9 @@ create_sd(const std::string &segmentation_model_path,
 }
 
 int32_t diarization_progress_callback(int32_t num_processed_chunk,
-                                      int32_t num_total_chunks, void *arg) {
+                                      int32_t num_total_chunks,
+                                      Spinner *spinner) {
 
-  Spinner *spinner = static_cast<Spinner *>(arg);
   CHECK_NULL(spinner);
   float progress =
       (static_cast<float>(num_processed_chunk) / num_total_chunks) * 100.0f;
@@ -307,7 +307,12 @@ int main(int argc, char *argv[]) {
 
   spinner.start();
   auto *result = SherpaOnnxOfflineSpeakerDiarizationProcessWithCallback(
-      sd, wave->samples, wave->num_samples, diarization_progress_callback,
+      sd, wave->samples, wave->num_samples,
+      [](int32_t num_processed_chunk, int32_t num_total_chunks,
+         void *arg) -> int32_t {
+        return diarization_progress_callback(
+            num_processed_chunk, num_total_chunks, static_cast<Spinner *>(arg));
+      },
       &spinner);
   spinner.stop();
   CHECK_NULL(result);

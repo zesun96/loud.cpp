@@ -9,55 +9,62 @@
 #include <string>
 #include <termcolor/termcolor.hpp>
 
-Spinner spinner("");
-std::string current_file = "";
+struct DownloadContext {
+  Spinner spinner;
+  std::string file_name;
+};
 
-size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp) {
-  std::ofstream *ofs = static_cast<std::ofstream *>(userp);
-  ofs->write(static_cast<char *>(contents), size * nmemb);
+size_t write_callback(char *contents, size_t size, size_t nmemb,
+                      std::ofstream *userp) {
+  userp->write(contents, size * nmemb);
   return size * nmemb;
 }
 
-static int progress_callback(void *ptr, curl_off_t dltotal, curl_off_t dlnow,
-                             curl_off_t ultotal, curl_off_t ulnow) {
+static int progress_callback(DownloadContext *ctx, curl_off_t dltotal,
+                             curl_off_t dlnow, curl_off_t ultotal,
+                             curl_off_t ulnow) {
 
   if (dltotal > 0) {
     // To avoid issues with extremely small or invalid values
     int progress = static_cast<int>((dlnow * 100) / dltotal);
     if (progress >= 0 && progress <= 100) {
       std::ostringstream message;
-      message << "Download " << current_file << " " << std::fixed
+      message << "Download " << ctx->file_name << " " << std::fixed
               << std::setprecision(0) << progress << "%";
-      spinner.updateMessage(message.str());
+      ctx->spinner.updateMessage(message.str());
     }
   }
   return 0;
 }
 
-void download_file(std::string url, std::string path) {
-  std::ostringstream message;
-  current_file = path;
-  message << "Download " << path << "...";
-  spinner.updateMessage(message.str());
-  spinner.start();
-  CURL *curl = curl_easy_init();
+void download_file(const std::string url, const std::string path) {
+  DownloadContext ctx;
+  ctx.file_name = path;
+  ctx.spinner.updateMessage("Download " + path + "...");
+  ctx.spinner.start();
+
   CURLcode res;
-  if (curl) {
+  if (CURL *curl = curl_easy_init(); curl) {
     std::ofstream ofs(path, std::ios::binary);
     // curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
+    curl_easy_setopt(
+        curl, CURLOPT_WRITEFUNCTION,
+        +[](void *contents, size_t size, size_t nmemb, void *userp) {
+          return write_callback(static_cast<char *>(contents), size, nmemb,
+                                static_cast<std::ofstream *>(userp));
+        });
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &ofs);
+    curl_easy_setopt(curl, CURLOPT_XFERINFODATA, &ctx);
     curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, progress_callback);
-    curl_easy_setopt(curl, CURLOPT_PROGRESSDATA,
-                     nullptr);                      // No extra data passed
-    curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L); // Enable progress tracking
+    curl_easy_setopt(curl, CURLOPT_NOPROGRESS,
+                     0L); // Enable progress tracking
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     res = curl_easy_perform(curl);
-
     curl_easy_cleanup(curl);
   }
-  spinner.stop();
+
+  ctx.spinner.stop();
   if (res == CURLE_OK) {
     std::cout << termcolor::green << "✓" << termcolor::reset << " Download "
               << path << " complete!" << std::endl;
