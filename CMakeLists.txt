@@ -19,6 +19,11 @@ if(SHERPA_STATIC)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
+if(UNIX)
+    # Add CWD to search paths of runtime libs
+    SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH}:$ORIGIN")
+endif()
+
 # Prepare executable
 file(GLOB SRC_FILES "src/*.cpp")
 add_executable(main ${SRC_FILES})
