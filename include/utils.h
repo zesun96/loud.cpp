@@ -1,7 +1,7 @@
-#ifndef MAIN_H
-#define MAIN_H
+#pragma once
 
-#include <whisper.h>
+#include <nlohmann/json.hpp>
+#include <string>
 
 #ifndef VERSION
 #define VERSION ""
@@ -33,6 +33,13 @@
   }
 #endif
 
-static void cb_log_disable(enum ggml_log_level, const char *, void *) {}
+namespace utils {
 
-#endif
+std::string get_relative_path(const std::string &absolute_path);
+std::string get_random_string(int length);
+std::string get_random_path(std::string suffix);
+bool is_program_installed(std::string name);
+std::string get_argv_line(int argc, char *argv[]);
+void save_json(const std::string &json_path,
+               const nlohmann::ordered_json &result_json);
+} // namespace utils

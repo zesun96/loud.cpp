@@ -9,8 +9,10 @@
 #include <string>
 #include <termcolor/termcolor.hpp>
 
+namespace download {
+
 struct DownloadContext {
-  Spinner spinner;
+  spinner::Spinner spinner;
   std::string file_name;
 };
 
@@ -74,3 +76,4 @@ void download_file(const std::string url, const std::string path) {
               << " failed: " << curl_easy_strerror(res) << std::endl;
   }
 }
+} // namespace download

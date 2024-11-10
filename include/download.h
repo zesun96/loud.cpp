@@ -1,8 +1,7 @@
-#ifndef DOWNLOAD_H
-#define DOWNLOAD_H
+#pragma once
 
 #include <string>
 
+namespace download {
 void download_file(std::string url, std::string path);
-
-#endif
+}

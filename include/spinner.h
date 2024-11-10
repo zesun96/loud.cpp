@@ -1,10 +1,11 @@
 // spinner.h
-#ifndef SPINNER_H
-#define SPINNER_H
+#pragma once
 
 #include <atomic>
 #include <string>
 #include <thread>
+
+namespace spinner {
 
 class Spinner {
 public:
@@ -28,4 +29,4 @@ private:
   std::thread spinnerThread;  // Thread for spinner animation
 };
 
-#endif // SPINNER_H
+} // namespace spinner

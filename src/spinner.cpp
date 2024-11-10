@@ -16,6 +16,8 @@
 #include <Windows.h>
 #endif
 
+namespace spinner {
+
 void hideCursor() {
 #ifdef _WIN32
   // Windows-specific code to hide cursor
@@ -123,3 +125,4 @@ Spinner::~Spinner() {
   signal(SIGQUIT, SIG_DFL);
 #endif
 }
+} // namespace spinner
