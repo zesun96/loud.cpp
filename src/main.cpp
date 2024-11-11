@@ -117,11 +117,8 @@ int main(int argc, char *argv[]) {
 
   auto json =
       segments::process_segments(segments, num_segments, wave, ctx, params);
-
   // Write JSON file
-  if (!json_path.empty()) {
-    utils::save_json(json_path, json);
-  }
+  utils::save_json(json_path, json);
 
   // Cleanup
   SherpaOnnxOfflineSpeakerDiarizationDestroySegment(segments);

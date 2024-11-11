@@ -9,21 +9,21 @@
 namespace segments {
 static void
 handle_segment(whisper_context *ctx, whisper_full_params params,
-               nlohmann::ordered_json json,
+               nlohmann::ordered_json *json,
                const SherpaOnnxOfflineSpeakerDiarizationSegment *segments,
                std::vector<float> segment_data, int32_t index) {
   auto text = transcribe::transcribe_audio_chunk(
       ctx, params, segment_data.data(), segment_data.size());
+
   if (text.empty()) {
     return;
   }
 
-  if (!json.empty()) {
-    json.push_back({{"text", text},
-                    {"start", segments[index].start},
-                    {"end", segments[index].end},
-                    {"speaker", segments[index].speaker}});
-  }
+  json->push_back({{"text", text},
+                   {"start", segments[index].start},
+                   {"end", segments[index].end},
+                   {"speaker", segments[index].speaker}});
+
   diarization::print_segment(segments[index], text);
 }
 
@@ -35,7 +35,8 @@ nlohmann::ordered_json process_segments(
     whisper_context *ctx,       // Assuming Context is a defined struct or class
     whisper_full_params params  // Assuming Params is a defined struct or class
 ) {
-  nlohmann::ordered_json result_json;
+  nlohmann::ordered_json json = nlohmann::json::array();
+
   // Iterate diarize segments
 
   for (int32_t i = 0; i != num_segments; ++i) {
@@ -75,7 +76,7 @@ nlohmann::ordered_json process_segments(
         if (chunk_data.size() < chunk_size) {
           chunk_data.resize(chunk_size, 0.0f);
         }
-        handle_segment(ctx, params, result_json, segments, chunk_data, i);
+        handle_segment(ctx, params, &json, segments, chunk_data, i);
       }
     } else {
       // Process the segment if it's <= 30 seconds
@@ -88,9 +89,9 @@ nlohmann::ordered_json process_segments(
         segment_data.resize(chunk_size, 0.0f);
       }
 
-      handle_segment(ctx, params, result_json, segments, segment_data, i);
+      handle_segment(ctx, params, &json, segments, segment_data, i);
     }
   }
-  return result_json;
+  return json;
 }
 } // namespace segments
