@@ -20,7 +20,7 @@ Download and extract it from [releases](https://github.com/thewh1teagle/loud.cpp
 ## Usage
 
 ```console
-./loud audio.wav --json transcript.json --setup
+./loud test.wav --json transcript.json --setup
 ```
 
 ## Building
