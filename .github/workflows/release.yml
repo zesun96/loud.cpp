@@ -3,6 +3,11 @@ name: Build and Upload
 on:
   workflow_dispatch: null
 
+env:
+  SCCACHE_GHA_ENABLED: "true"
+  CC: "clang"
+  CXX: "clang++"
+
 jobs:
   build:
     permissions:
@@ -26,7 +31,7 @@ jobs:
             cmake-args: "-DGGML_VULKAN=ON"
             archive: loud-windows-x86-64.zip
           - platform: "windows-latest" # Windows x86_64 static
-            cmake-args: "-DGGML_VULKAN=ON -DSHERPA_STATIC=ON -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++"
+            cmake-args: "-DGGML_VULKAN=ON -DSHERPA_STATIC=ON"
             archive: loud-windows-x86-64-static.zip
     runs-on: ${{ matrix.platform }}
 
@@ -67,6 +72,16 @@ jobs:
           echo "VULKAN_SDK=$PWD/vulkan-sdk" >> $env:GITHUB_ENV
           echo "$PWD/vulkan-sdk/Bin" >> $env:GITHUB_PATH
         if: contains(matrix.platform, 'windows')
+
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.6
+
+      - name: Cache Cmake
+        id: cache-cmake
+        uses: actions/cache@v4
+        with:
+          path: .cache
+          key: ${{ matrix.platform }}-cmake-${{ matrix.archive }}
 
       - name: Build with CMake and Ninja
         run: |

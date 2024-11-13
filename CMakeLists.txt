@@ -8,12 +8,26 @@ if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
     cmake_policy(SET CMP0135 NEW)
 endif()
 
-# Export compile_commands.json
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
 # Options
+option(LOUD_SCCACHE "Enable loud ccache" ON)
 option(FFMPEG_DOWNLOAD "Download and set up FFmpeg" OFF)
 option(SHERPA_STATIC "Link sherpa libs statically" OFF)
+
+if(LOUD_SCCACHE)
+    find_program(SCCACHE_FOUND sccache)
+    if (SCCACHE_FOUND)
+        message(STATUS "SCCache Enabled")
+        set(CMAKE_C_COMPILER_LAUNCHER ${SCCACHE})
+        set(CMAKE_CXX_COMPILER_LAUNCHER ${SCCACHE})
+    else()
+        message(WARNING "Warning: sccache not found - consider installing it for faster compilation or disable this warning with LOUD_SCCACHE=OFF.")
+    endif()
+endif()
+
+# Export compile_commands.json
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+# Store _deps in .cache/_deps
+set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/.cache/_deps")
 
 if(SHERPA_STATIC)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
