@@ -10,7 +10,7 @@ Whisper.cpp with diarization
 - Support macOS, Windows, Linux
 - Comes with FFMPEG
 - Support any audio or video format
-- Download models automatically with `--download-models`
+- Download models automatically with `--setup`
 - Colored output for easy identification of speakers
 
 ## Install
@@ -20,7 +20,7 @@ Download and extract it from [releases](https://github.com/thewh1teagle/loud.cpp
 ## Usage
 
 ```console
-./loud audio.wav --json transcript.json --download-models
+./loud audio.wav --json transcript.json --setup
 ```
 
 ## Building
