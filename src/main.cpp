@@ -4,6 +4,10 @@
 #include "download.h"
 #include "segments.h"
 #include "sherpa-onnx/c-api/c-api.h"
+#include "spdlog/cfg/env.h"
+#include "spdlog/common.h"
+#include "spdlog/sinks/stdout_sinks.h"
+#include "spdlog/spdlog.h"
 #include "spinner.h"
 #include "transcribe.h"
 #include "utils.h"
@@ -13,6 +17,8 @@
 #include <termcolor/termcolor.hpp>
 #include <whisper.h>
 
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_INFO
+
 namespace fs = std::filesystem;
 
 using spinner::Spinner;
@@ -20,6 +26,7 @@ using utils::contains;
 
 int main(int argc, char *argv[]) {
 
+  spdlog::cfg::load_env_levels();
   CLI::App app{"Loud.cpp\nSpeech to text with ONNX and Whisper\n"};
 
   std::string whisper_model_path = config::ggml_tiny_name;
@@ -31,7 +38,6 @@ int main(int argc, char *argv[]) {
   int32_t num_speakers = 4;
   int32_t onnx_num_threads = 4;
   std::string onnx_provider = diarization::get_default_provider();
-  bool debug = false;
   bool setup = false;
   bool show_version = false;
 
@@ -60,7 +66,9 @@ int main(int argc, char *argv[]) {
   app.add_option("--onnx-provider", onnx_provider, "Onnx execution provider");
   app.add_option("--onnx-num-threads", onnx_num_threads,
                  "Onnx number of threads (Default: 4)");
-  app.add_flag("--debug", debug, "Enable debug output");
+
+  spdlog::debug("log level: {}",
+                spdlog::level::to_string_view(spdlog::get_level()));
 
   try {
     app.parse(argc, argv);
@@ -118,7 +126,7 @@ int main(int argc, char *argv[]) {
       SherpaOnnxOfflineSpeakerDiarizationResultSortByStartTime(result);
 
   // Start transcribe
-  const auto params = transcribe::create_whisper_params(language, debug);
+  const auto params = transcribe::create_whisper_params(language);
   const auto cparams = whisper_context_default_params();
   auto *ctx =
       whisper_init_from_file_with_params(whisper_model_path.c_str(), cparams);

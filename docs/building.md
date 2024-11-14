@@ -116,3 +116,9 @@ $env:CXX = "clang++"
 cmake -G "Ninja" -B build . -DCMAKE_BUILD_TYPE=Release -DGGML_VULKAN=ON -DSHERPA_STATIC=ON
 cmake --build build --config Release
 ```
+
+## Debug
+
+```console
+export SPDLOG_LEVEL=debug # trace,debug,info,warn,error,critical,off
+```
