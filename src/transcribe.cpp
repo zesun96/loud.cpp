@@ -1,14 +1,40 @@
+#include "ggml.h"
 #include <iostream>
+#include <spdlog/spdlog.h>
 #include <sstream>
 #include <string>
 #include <whisper.h>
 
 namespace transcribe {
-whisper_full_params create_whisper_params(std::string &language, bool debug) {
+whisper_full_params create_whisper_params(std::string &language) {
 
-  if (!debug) {
-    whisper_log_set([](enum ggml_log_level, const char *, void *) {}, NULL);
-  }
+  whisper_log_set(
+      [](enum ggml_log_level level, const char *message, void *user_data) {
+        // Use the debug flag from the context
+        if (level == GGML_LOG_LEVEL_INFO) {
+          level = GGML_LOG_LEVEL_DEBUG;
+        }
+        switch (level) {
+        case GGML_LOG_LEVEL_DEBUG:
+          spdlog::debug("{}", message);
+          break;
+        case GGML_LOG_LEVEL_INFO:
+          spdlog::info("{}", message);
+          break;
+        case GGML_LOG_LEVEL_WARN:
+          spdlog::warn("{}", message);
+          break;
+        case GGML_LOG_LEVEL_ERROR:
+          spdlog::error("{}", message);
+          break;
+        default:
+          spdlog::error("{}", message);
+          break;
+        }
+      },
+      nullptr); // Pass raw pointer for user_data
+
+  // Set other whisper parameters as needed...
 
   whisper_full_params wparams =
       whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
@@ -22,7 +48,7 @@ whisper_full_params create_whisper_params(std::string &language, bool debug) {
   wparams.translate = false;
   wparams.single_segment = true;
   wparams.print_progress = false;
-  wparams.no_context = true;
+  wparams.no_context = false;
   wparams.max_tokens = 32;
   // wparams.split_on_word = true;
 
@@ -40,10 +66,12 @@ std::string transcribe_audio_chunk(whisper_context *ctx,
 
   // Get and return the chunk transcription
   const int n_segments = whisper_full_n_segments(ctx);
+  spdlog::debug("got {} segments", n_segments);
   std::ostringstream transcription;
 
   for (int j = 0; j < n_segments; j++) {
     const char *segment_text = whisper_full_get_segment_text(ctx, j);
+    spdlog::debug("segment[{}] = {}", j, segment_text);
     transcription << segment_text << " ";
   }
 
