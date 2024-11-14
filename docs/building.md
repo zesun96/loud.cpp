@@ -120,5 +120,5 @@ cmake --build build --config Release
 ## Debug
 
 ```console
-export SPDLOG_LEVEL=debug # trace,debug,info,warn,error,critical,off
+export SPDLOG_LEVEL="DEBUG" # TRACE,DEBUG,INFO,WARN,ERROR,CRITICAL,OFF
 ```
