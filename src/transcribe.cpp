@@ -4,7 +4,7 @@
 #include <whisper.h>
 
 namespace transcribe {
-whisper_full_params create_whisper_params(std::string language, bool debug) {
+whisper_full_params create_whisper_params(std::string &language, bool debug) {
 
   if (!debug) {
     whisper_log_set([](enum ggml_log_level, const char *, void *) {}, NULL);
