@@ -45,8 +45,9 @@ target_include_directories(main PRIVATE "${CMAKE_SOURCE_DIR}/include")
 set_target_properties(main PROPERTIES OUTPUT_NAME "loud")
 set_target_properties(main PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
-# -DVERSION="$(git rev-parse --short HEAD)"
-add_compile_definitions(VERSION="${VERSION}")
+# -DTAG="$(git describe --tags --abbrev=0)" -DREV="$(git rev-parse --short HEAD)"
+add_compile_definitions(TAG="${TAG}")
+add_compile_definitions(REV="${REV}")
 
 # Used in __FILE__ for relative path
 string(LENGTH "${PROJECT_SOURCE_DIR}/" SOURCE_PATH_SIZE)
@@ -60,6 +61,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # External libraries
 include(FetchContent)
+include(cmake/fmt.cmake)
 include(cmake/cli11.cmake)
 include(cmake/json.cmake)
 include(cmake/spdlog.cmake)

@@ -1,3 +1,9 @@
+// enable SPDLOG macros
+#include "fmt/format.h"
+#include <cstdlib>
+#include <string>
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
+
 #include "CLI/CLI.hpp"
 #include "config.h"
 #include "diarization.h"
@@ -6,18 +12,18 @@
 #include "sherpa-onnx/c-api/c-api.h"
 #include "spdlog/cfg/env.h"
 #include "spdlog/common.h"
-#include "spdlog/sinks/stdout_sinks.h"
 #include "spdlog/spdlog.h"
 #include "spinner.h"
 #include "transcribe.h"
-#include "utils.h"
 #include <CLI/CLI.hpp>
+#include <fmt/color.h>
+#include <fmt/core.h>
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <termcolor/termcolor.hpp>
-#include <whisper.h>
 
-#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_INFO
+#include "utils.h"
+#include <whisper.h>
 
 namespace fs = std::filesystem;
 
@@ -25,8 +31,8 @@ using spinner::Spinner;
 using utils::contains;
 
 int main(int argc, char *argv[]) {
-
   spdlog::cfg::load_env_levels();
+  utils::log_version();
   CLI::App app{"Loud.cpp\nSpeech to text with ONNX and Whisper\n"};
 
   std::string whisper_model_path = config::ggml_tiny_name;
@@ -67,9 +73,6 @@ int main(int argc, char *argv[]) {
   app.add_option("--onnx-num-threads", onnx_num_threads,
                  "Onnx number of threads (Default: 4)");
 
-  spdlog::debug("log level: {}",
-                spdlog::level::to_string_view(spdlog::get_level()));
-
   try {
     app.parse(argc, argv);
   } catch (const CLI::ParseError &e) {
@@ -77,10 +80,16 @@ int main(int argc, char *argv[]) {
   }
 
   if (show_version) {
-    std::cout << termcolor::green << "==== loud.cpp " << termcolor::blue
-              << VERSION << termcolor::green << " ====" << termcolor::reset
-              << std::endl
-              << termcolor::reset << std::endl;
+    if (TAG[0] == '\0' || REV[0] == '\0') {
+      SPDLOG_ERROR("TAG and REV was not set");
+      return EXIT_FAILURE;
+    }
+    std::cout << termcolor::green << "==== loud.cpp " << termcolor::blue << TAG
+              << termcolor::green << " (" << termcolor::reset << termcolor::blue
+              << termcolor::italic << REV << termcolor::reset
+              << termcolor::green << ") ====" << termcolor::reset << std::endl
+              << std::endl;
+
     return EXIT_SUCCESS;
   }
 

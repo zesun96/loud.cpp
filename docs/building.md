@@ -77,6 +77,8 @@ cmake --build build --config Release
 ## Create release and upload
 
 ```console
+cmake -G Ninja -B build . -DCMAKE_BUILD_TYPE=Release -DTAG="$(git describe --tags --abbrev=0)" -DREV="$(git rev-parse --short HEAD)"
+cmake --build build --config Release
 gh release create v0.1.0 --notes ''
 gh release upload `git describe --tags --abbrev=0` loud.exe
 ```
