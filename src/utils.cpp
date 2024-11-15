@@ -106,7 +106,6 @@ bool check_resource_exists(const std::string &resource_path, int argc,
 }
 
 void log_version() {
-  std::cout << "log version.." << REV << TAG << std::endl;
   if (REV[0] != '\0' && TAG[0] != '\0') {
     SPDLOG_DEBUG("loud.cpp {} ({})", TAG, REV);
     std::string issue_url =
