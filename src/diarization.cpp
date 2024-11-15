@@ -4,6 +4,7 @@
 #include "sherpa-onnx/c-api/c-api.h"
 #include "spinner.h"
 #include "utils.h"
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <nlohmann/json.hpp>
@@ -15,6 +16,7 @@
 #include <vector>
 #include <whisper.h>
 
+namespace fs = std::filesystem;
 using spinner::Spinner;
 
 namespace diarization {
@@ -126,7 +128,12 @@ const SherpaOnnxWave *read_wave(const std::string &path) {
 
 const SherpaOnnxWave *prepare_audio_file(const std::string &audio_file,
                                          int argc, char *argv[]) {
-  auto wave = diarization::read_wave(audio_file);
+
+  const SherpaOnnxWave *wave = nullptr;
+  auto is_wav = fs::path(audio_file).extension() == ".wav";
+  if (is_wav) {
+    wave = diarization::read_wave(audio_file);
+  }
   if (wave == nullptr) {
     if (utils::is_program_installed("ffmpeg")) {
       auto random_path = utils::get_random_path(".wav");

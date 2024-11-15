@@ -1,8 +1,13 @@
+#include "utils.h"
 #include "config.h"
 #include <filesystem>
+#include <fmt/color.h>
+#include <fmt/core.h>
 #include <fstream>
+#include <iostream>
 #include <nlohmann/json.hpp>
 #include <random>
+#include <spdlog/spdlog.h>
 #include <sstream>
 #include <string>
 #include <subprocess.hpp>
@@ -98,6 +103,20 @@ bool check_resource_exists(const std::string &resource_path, int argc,
     return false;
   }
   return true;
+}
+
+void log_version() {
+  if (REV[0] != '\0' && TAG[0] != '\0') {
+    SPDLOG_DEBUG("loud.cpp {} ({})", TAG, REV);
+    std::string issue_url =
+        fmt::format("https://github.com/thewh1teagle/loud.cpp/issues/"
+                    "new?labels=bug&body=%0A%0A%60loud.cpp+{}%60+{}",
+                    TAG, REV);
+    auto issue_report =
+        fmt::format(fg(fmt::color::crimson) | fmt::emphasis::bold,
+                    "Found an issue? Report at {}", issue_url);
+    spdlog::debug(issue_report);
+  }
 }
 
 bool check_program_installed(const std::string &program_path, int argc,

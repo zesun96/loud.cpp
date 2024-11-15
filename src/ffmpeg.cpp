@@ -1,3 +1,4 @@
+#include "spdlog/spdlog.h"
 #include "subprocess/ProcessBuilder.hpp"
 #include "subprocess/basic_types.hpp"
 #include "utils.h"
@@ -12,8 +13,8 @@
 namespace ffmpeg {
 
 void normalize_audio(std::string input, std::string output) {
-  std::cout << "Normalizing audio from " << input << " to " << output
-            << std::endl;
+  SPDLOG_INFO("Normalizing audio from {} to {}", input, output);
+
   using subprocess::CompletedProcess;
   using subprocess::PipeOption;
   using subprocess::RunBuilder;

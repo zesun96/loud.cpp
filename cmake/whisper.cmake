@@ -3,21 +3,23 @@
 FetchContent_Declare(whisper URL https://github.com/ggerganov/whisper.cpp/archive/f19463ece2d43fd0b605dc513d8800eeb4e2315e.zip)
 
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
-set(WHISPER_CCACHE OFF CACHE BOOL "")
-set(GGML_CCACHE OFF CACHE BOOL "")
 set(WHISPER_BUILD_TESTS OFF CACHE BOOL "")
 set(WHISPER_BUILD_EXAMPLES OFF CACHE BOOL "")
 set(WHISPER_BUILD_SERVER OFF CACHE BOOL "")
-set(GGML_METAL_EMBED_LIBRARY ON CACHE BOOL "")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     # Hide debug logs from Vulkan
     add_definitions(-DNDEBUG)
 endif()
 
+if(LOUD_SCCACHE)
+    set(WHISPER_CCACHE ON CACHE BOOL "")
+    set(GGML_CCACHE ON CACHE BOOL "")
+endif()
+
 if(APPLE)
-    set(WHISPER_COREML ON CACHE BOOL "")
-    set(WHISPER_COREML_ALLOW_FALLBACK ON CACHE BOOL "")
+    set(WHISPER_COREML OFF CACHE BOOL "")
+    set(GGML_METAL_EMBED_LIBRARY ON CACHE BOOL "")
     set(GGML_METAL ON CACHE BOOL "")
 endif()
 

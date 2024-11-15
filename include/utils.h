@@ -49,4 +49,5 @@ bool contains(int argc, char *argv[], const std::string &arg);
 void set_executable(const std::string &file_path);
 bool check_program_installed(const std::string &program_path, int argc,
                              char *argv[]);
+void log_version();
 } // namespace utils

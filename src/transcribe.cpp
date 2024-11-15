@@ -16,19 +16,19 @@ whisper_full_params create_whisper_params(std::string &language) {
         }
         switch (level) {
         case GGML_LOG_LEVEL_DEBUG:
-          spdlog::debug("{}", message);
+          SPDLOG_DEBUG("{}", message);
           break;
         case GGML_LOG_LEVEL_INFO:
-          spdlog::info("{}", message);
+          SPDLOG_INFO("{}", message);
           break;
         case GGML_LOG_LEVEL_WARN:
-          spdlog::warn("{}", message);
+          SPDLOG_WARN("{}", message);
           break;
         case GGML_LOG_LEVEL_ERROR:
-          spdlog::error("{}", message);
+          SPDLOG_ERROR("{}", message);
           break;
         default:
-          spdlog::error("{}", message);
+          SPDLOG_ERROR("{}", message);
           break;
         }
       },
@@ -66,12 +66,12 @@ std::string transcribe_audio_chunk(whisper_context *ctx,
 
   // Get and return the chunk transcription
   const int n_segments = whisper_full_n_segments(ctx);
-  spdlog::debug("got {} segments", n_segments);
+  SPDLOG_DEBUG("got {} segments", n_segments);
   std::ostringstream transcription;
 
   for (int j = 0; j < n_segments; j++) {
     const char *segment_text = whisper_full_get_segment_text(ctx, j);
-    spdlog::debug("segment[{}] = {}", j, segment_text);
+    SPDLOG_DEBUG("segment[{}] = {}", j, segment_text);
     transcription << segment_text << " ";
   }
 
