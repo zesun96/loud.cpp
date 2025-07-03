@@ -42,22 +42,15 @@ jobs:
           # Used for getting git tag
           fetch-depth: 0
 
-      # 安装 LLVM/Clang 19
-      - name: Install LLVM 19
-        uses: llvm/llvm-installer@v1.0.0
+      - name: Install LLVM and Clang
+        uses: KyleMayes/install-llvm-action@v2
         with:
-          version: "19"  # 指定安装 Clang 19.x 最新版
-        if: (!contains(matrix.platform, 'windows'))
+          version: "19.0"
+        if: (contains(matrix.platform, 'windows'))
 
       # 验证 Clang 版本
       - name: Check Clang version
         run: clang --version
-
-      # 添加 Clang 到 PATH
-      - name: Set Clang to PATH
-        run: |
-          echo "C:\Program Files\LLVM\bin" >> $env:GITHUB_PATH
-        if: (!contains(matrix.platform, 'windows'))
 
       - name: Prepare ninja (Unix)
         run: |
