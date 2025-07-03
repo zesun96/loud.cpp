@@ -138,10 +138,14 @@ int main(int argc, char *argv[]) {
       whisper_init_from_file_with_params(whisper_model_path.c_str(), cparams);
   CHECK_NULL(ctx);
 
+  std::cout << "Starting parse segments!" << std::endl;
   auto json = segments::process_segments(segments, wave, ctx, params);
   // Write JSON file
   if (!json_path.empty()) {
     utils::save_json(json_path, json);
+  } else {
+    std::cout << termcolor::red << "x" << termcolor::reset << " No JSON result!"
+              << std::endl;
   }
 
   // Cleanup
